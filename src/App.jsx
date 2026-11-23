@@ -24,7 +24,462 @@ function gradeOf(m) {
   return { gpa: 0, grade: "F" };
 }
 const SUBJECTS = ["বাংলা", "ইংরেজি", "গণিত", "বিজ্ঞান", "সমাজবিজ্ঞান"];
-const CLASS_NAMES = ["ষষ্ঠ", "সপ্তম", "অষ্টম", "নবম", "দশম"];
+const CLASS_NAMES = [
+  "প্লে", "নার্সারি", "কেজি",
+  "প্রথম", "দ্বিতীয়", "তৃতীয়", "চতুর্থ", "পঞ্চম",
+  "ষষ্ঠ", "সপ্তম", "অষ্টম", "নবম", "দশম",
+  "একাদশ", "দ্বাদশ"
+];
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+const toBnNum = n => String(n).replace(/\d/g, d => BN_DIGITS[d]);
+const DEFAULT_CLASS_SPECS = [
+  { name: "প্লে", floor: 1, offset: 0, capacity: 30 },
+  { name: "নার্সারি", floor: 1, offset: 3, capacity: 30 },
+  { name: "কেজি", floor: 1, offset: 6, capacity: 35 },
+  { name: "প্রথম", floor: 1, offset: 9, capacity: 40 },
+  { name: "দ্বিতীয়", floor: 1, offset: 12, capacity: 40 },
+  { name: "তৃতীয়", floor: 2, offset: 0, capacity: 40 },
+  { name: "চতুর্থ", floor: 2, offset: 3, capacity: 40 },
+  { name: "পঞ্চম", floor: 2, offset: 6, capacity: 45 },
+  { name: "ষষ্ঠ", floor: 2, offset: 9, capacity: 45 },
+  { name: "সপ্তম", floor: 2, offset: 12, capacity: 45 },
+  { name: "অষ্টম", floor: 3, offset: 0, capacity: 45 },
+  { name: "নবম", floor: 3, offset: 3, capacity: 50 },
+  { name: "দশম", floor: 3, offset: 6, capacity: 50 },
+  { name: "একাদশ", floor: 4, offset: 0, capacity: 50 },
+  { name: "দ্বাদশ", floor: 4, offset: 3, capacity: 50 }
+];
+const SECTION_NAMES = ["ক", "খ", "গ"];
+const GROUP_CLASSES = ["নবম", "দশম", "একাদশ", "দ্বাদশ"];
+const GROUP_SECTION_NAMES = ["সাইন্স", "ইকমার্স", "মানবিক"];
+const isGroupClass = name => GROUP_CLASSES.includes(String(name || "").trim());
+const defaultSectionNamesForClass = name => isGroupClass(name) ? GROUP_SECTION_NAMES : SECTION_NAMES;
+
+const DEFAULT_BOARD_BOOKS = {
+  "প্লে": [
+    { title: "আমার বাংলা বই (প্রাক-প্রাথমিক)", group: "সাধারণ" },
+    { title: "English for Today (Pre-Primary)", group: "সাধারণ" },
+    { title: "সহজ গণিত (প্রাথমিক)", group: "সাধারণ" },
+    { title: "পরিবেশ পরিচিতি ও ছবি আঁকা", group: "সাধারণ" }
+  ],
+  "নার্সারি": [
+    { title: "আমার বাংলা বই (নার্সারি)", group: "সাধারণ" },
+    { title: "English for Today (Nursery)", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত (নার্সারি)", group: "সাধারণ" },
+    { title: "পরিবেশ ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "কেজি": [
+    { title: "আমার বাংলা বই (কেজি)", group: "সাধারণ" },
+    { title: "English for Today (KG)", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত (কেজি)", group: "সাধারণ" },
+    { title: "সাধারণ বিজ্ঞান ও পরিবেশ", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "প্রথম": [
+    { title: "আমার বাংলা বই", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত", group: "সাধারণ" }
+  ],
+  "দ্বিতীয়": [
+    { title: "আমার বাংলা বই", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত", group: "সাধারণ" }
+  ],
+  "তৃতীয়": [
+    { title: "আমার বাংলা বই", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত", group: "সাধারণ" },
+    { title: "প্রাথমিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "বাংলাদেশ ও বিশ্বপরিচয়", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "চতুর্থ": [
+    { title: "আমার বাংলা বই", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত", group: "সাধারণ" },
+    { title: "প্রাথমিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "বাংলাদেশ ও বিশ্বপরিচয়", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "পঞ্চম": [
+    { title: "আমার বাংলা বই", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "প্রাথমিক গণিত", group: "সাধারণ" },
+    { title: "প্রাথমিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "বাংলাদেশ ও বিশ্বপরিচয়", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "ষষ্ঠ": [
+    { title: "বাংলা (চারুপাঠ)", group: "সাধারণ" },
+    { title: "আনন্দ পাঠ", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "গণিত", group: "সাধারণ" },
+    { title: "বিজ্ঞান", group: "সাধারণ" },
+    { title: "ইতিহাস ও সামাজিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "ডিজিটাল প্রযুক্তি", group: "সাধারণ" },
+    { title: "স্বাস্থ্য সুরক্ষা", group: "সাধারণ" },
+    { title: "জীবন ও জীবিকা", group: "সাধারণ" },
+    { title: "শিল্প ও সংস্কৃতি", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "সপ্তম": [
+    { title: "বাংলা (সপ্তবর্ণা)", group: "সাধারণ" },
+    { title: "আনন্দ পাঠ", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "গণিত", group: "সাধারণ" },
+    { title: "বিজ্ঞান", group: "সাধারণ" },
+    { title: "ইতিহাস ও সামাজিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "ডিজিটাল প্রযুক্তি", group: "সাধারণ" },
+    { title: "স্বাস্থ্য সুরক্ষা", group: "সাধারণ" },
+    { title: "জীবন ও জীবিকা", group: "সাধারণ" },
+    { title: "শিল্প ও সংস্কৃতি", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "অষ্টম": [
+    { title: "বাংলা (সাহিত্য কণিকা)", group: "সাধারণ" },
+    { title: "আনন্দ পাঠ", group: "সাধারণ" },
+    { title: "English for Today", group: "সাধারণ" },
+    { title: "গণিত", group: "সাধারণ" },
+    { title: "বিজ্ঞান", group: "সাধারণ" },
+    { title: "ইতিহাস ও সামাজিক বিজ্ঞান", group: "সাধারণ" },
+    { title: "ডিজিটাল প্রযুক্তি", group: "সাধারণ" },
+    { title: "স্বাস্থ্য সুরক্ষা", group: "সাধারণ" },
+    { title: "জীবন ও জীবিকা", group: "সাধারণ" },
+    { title: "শিল্প ও সংস্কৃতি", group: "সাধারণ" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "সাধারণ" }
+  ],
+  "নবম": [
+    { title: "বাংলা সাহিত্য ও সহপাঠ", group: "আবশ্যিক" },
+    { title: "বাংলা ভাষার ব্যাকরণ ও নির্মিতি", group: "আবশ্যিক" },
+    { title: "English for Today", group: "আবশ্যিক" },
+    { title: "English Grammar and Composition", group: "আবশ্যিক" },
+    { title: "গণিত", group: "আবশ্যিক" },
+    { title: "তথ্য ও যোগাযোগ প্রযুক্তি (ICT)", group: "আবশ্যিক" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "আবশ্যিক" },
+    { title: "পদার্থবিজ্ঞান", group: "সাইন্স" },
+    { title: "রসায়ন", group: "সাইন্স" },
+    { title: "জীববিজ্ঞান", group: "সাইন্স" },
+    { title: "উচ্চতর গণিত", group: "সাইন্স" },
+    { title: "বাংলাদেশ ও বিশ্বপরিচয়", group: "সাইন্স" },
+    { title: "হিসাববিজ্ঞান", group: "ইকমার্স" },
+    { title: "ব্যবসায় উদ্যোগ", group: "ইকমার্স" },
+    { title: "ফিন্যান্স ও ব্যাংকিং", group: "ইকমার্স" },
+    { title: "বিজ্ঞান (বাণিজ্য ও মানবিক)", group: "ইকমার্স" },
+    { title: "বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা", group: "মানবিক" },
+    { title: "ভূগোল ও পরিবেশ", group: "মানবিক" },
+    { title: "পৌরনীতি ও নাগরিকতা", group: "মানবিক" },
+    { title: "অর্থনীতি", group: "মানবিক" },
+    { title: "বিজ্ঞান (মানবিক)", group: "মানবিক" }
+  ],
+  "দশম": [
+    { title: "বাংলা সাহিত্য ও সহপাঠ", group: "আবশ্যিক" },
+    { title: "বাংলা ভাষার ব্যাকরণ ও নির্মিতি", group: "আবশ্যিক" },
+    { title: "English for Today", group: "আবশ্যিক" },
+    { title: "English Grammar and Composition", group: "আবশ্যিক" },
+    { title: "গণিত", group: "আবশ্যিক" },
+    { title: "তথ্য ও যোগাযোগ প্রযুক্তি (ICT)", group: "আবশ্যিক" },
+    { title: "ধর্ম ও নৈতিক শিক্ষা", group: "আবশ্যিক" },
+    { title: "পদার্থবিজ্ঞান", group: "সাইন্স" },
+    { title: "রসায়ন", group: "সাইন্স" },
+    { title: "জীববিজ্ঞান", group: "সাইন্স" },
+    { title: "উচ্চতর গণিত", group: "সাইন্স" },
+    { title: "বাংলাদেশ ও বিশ্বপরিচয়", group: "সাইন্স" },
+    { title: "হিসাববিজ্ঞান", group: "ইকমার্স" },
+    { title: "ব্যবসায় উদ্যোগ", group: "ইকমার্স" },
+    { title: "ফিন্যান্স ও ব্যাংকিং", group: "ইকমার্স" },
+    { title: "বিজ্ঞান (বাণিজ্য ও মানবিক)", group: "ইকমার্স" },
+    { title: "বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা", group: "মানবিক" },
+    { title: "ভূগোল ও পরিবেশ", group: "মানবিক" },
+    { title: "পৌরনীতি ও নাগরিকতা", group: "মানবিক" },
+    { title: "অর্থনীতি", group: "মানবিক" },
+    { title: "বিজ্ঞান (মানবিক)", group: "মানবিক" }
+  ],
+  "একাদশ": [
+    { title: "সাহিত্যপাঠ ও সহপাঠ (বাংলা ১ম ও ২য় পত্র)", group: "আবশ্যিক" },
+    { title: "English for Today (1st & 2nd Paper)", group: "আবশ্যিক" },
+    { title: "তথ্য ও যোগাযোগ প্রযুক্তি (ICT)", group: "আবশ্যিক" },
+    { title: "পদার্থবিজ্ঞান (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "রসায়ন (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "জীববিজ্ঞান (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "উচ্চতর গণিত (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "হিসাববিজ্ঞান (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "ব্যবসায় সংগঠন ও ব্যবস্থাপনা (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "ফিন্যান্স, ব্যাংকিং ও বিমা (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "উৎপাদন ব্যবস্থাপনা ও বিপণন / অর্থনীতি", group: "ইকমার্স" },
+    { title: "পৌরনীতি ও সুশাসন (১ম ও ২য় পত্র)", group: "মানবিক" },
+    { title: "ইতিহাস / ইসলামের ইতিহাস ও সংস্কৃতি", group: "মানবিক" },
+    { title: "সমাজবিজ্ঞান / সমাজকর্ম", group: "মানবিক" },
+    { title: "অর্থনীতি (১ম ও ২য় পত্র)", group: "মানবিক" },
+    { title: "যুক্তিবিদ্যা / ভূগোল", group: "মানবিক" }
+  ],
+  "দ্বাদশ": [
+    { title: "সাহিত্যপাঠ ও সহপাঠ (বাংলা ১ম ও ২য় পত্র)", group: "আবশ্যিক" },
+    { title: "English for Today (1st & 2nd Paper)", group: "আবশ্যিক" },
+    { title: "তথ্য ও যোগাযোগ প্রযুক্তি (ICT)", group: "আবশ্যিক" },
+    { title: "পদার্থবিজ্ঞান (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "রসায়ন (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "জীববিজ্ঞান (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "উচ্চতর গণিত (১ম ও ২য় পত্র)", group: "সাইন্স" },
+    { title: "হিসাববিজ্ঞান (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "ব্যবসায় সংগঠন ও ব্যবস্থাপনা (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "ফিন্যান্স, ব্যাংকিং ও বিমা (১ম ও ২য় পত্র)", group: "ইকমার্স" },
+    { title: "উৎপাদন ব্যবস্থাপনা ও বিপণন / অর্থনীতি", group: "ইকমার্স" },
+    { title: "পৌরনীতি ও সুশাসন (১ম ও ২য় পত্র)", group: "মানবিক" },
+    { title: "ইতিহাস / ইসলামের ইতিহাস ও সংস্কৃতি", group: "মানবিক" },
+    { title: "সমাজবিজ্ঞান / সমাজকর্ম", group: "মানবিক" },
+    { title: "অর্থনীতি (১ম ও ২য় পত্র)", group: "মানবিক" },
+    { title: "যুক্তিবিদ্যা / ভূগোল", group: "মানবিক" }
+  ]
+};
+
+const DEFAULT_EXTRA_ACTIVITIES = [
+  "কম্পিউটার ল্যাব",
+  "কোরআন শিক্ষা",
+  "স্পোকেন ল্যাব",
+  "স্পোর্টস",
+  "সুইমিং",
+  "জিম",
+  "আবৃত্তি",
+  "গান",
+  "অভিনয়",
+  "নৃত্য",
+  "ডিবেটিং"
+];
+
+function normalizeExtraActivities(c) {
+  if (c && Array.isArray(c.extraActivities)) {
+    return c.extraActivities.map(a => String(a || "").trim()).filter(Boolean);
+  }
+  return [...DEFAULT_EXTRA_ACTIVITIES];
+}
+
+function normalizeBoardBooks(c) {
+  if (c && Array.isArray(c.boardBooks) && c.boardBooks.length > 0) {
+    return c.boardBooks
+      .map(b => typeof b === "string"
+        ? { title: b.trim(), group: isGroupClass(c.name) ? "আবশ্যিক" : "সাধারণ" }
+        : { title: String((b && b.title) || "").trim(), group: String((b && b.group) || (isGroupClass(c.name) ? "আবশ্যিক" : "সাধারণ")).trim() })
+      .filter(b => b.title);
+  }
+  const fallback = (c && c.name && DEFAULT_BOARD_BOOKS[c.name]) || [];
+  return fallback.map(b => ({ ...b }));
+}
+
+function defaultBoardSubjects() {
+  const list = [];
+  CLASS_NAMES.forEach((clsName, cIdx) => {
+    const books = DEFAULT_BOARD_BOOKS[clsName] || [];
+    books.forEach((b, bIdx) => {
+      list.push({
+        id: "bb-" + (cIdx + 1) + "-" + (bIdx + 1),
+        name: b.title,
+        code: String((cIdx + 1) * 100 + bIdx + 1),
+        classes: clsName,
+        section: "সব শাখা",
+        group: b.group || "সাধারণ"
+      });
+    });
+    DEFAULT_EXTRA_ACTIVITIES.forEach((act, aIdx) => {
+      list.push({
+        id: "ea-" + (cIdx + 1) + "-" + (aIdx + 1),
+        name: act,
+        code: "EA-" + (cIdx + 1) + String(aIdx + 1).padStart(2, "0"),
+        classes: clsName,
+        section: "সব শাখা",
+        group: "এক্সট্রা অ্যাকটিভিটিস"
+      });
+    });
+  });
+  return list;
+}
+
+function buildClassRecord(id, name, sectionDetails, boardBooks, extraActivities) {
+  const cleanName = String(name || "").trim();
+  const defSecs = defaultSectionNamesForClass(cleanName);
+  const details = (sectionDetails || []).map((s, idx) => {
+    const rec = {
+      name: (s.name || defSecs[idx] || String(idx + 1)).trim(),
+      room: String(s.room || "—").trim(),
+      capacity: +s.capacity || 0
+    };
+    if (Array.isArray(s.subjects)) {
+      rec.subjects = s.subjects.map((sub, subIdx) => ({
+        id: (sub && sub.id) || ("sec-sub-" + (idx + 1) + "-" + (subIdx + 1)),
+        name: String((sub && (sub.name || sub.title)) || "").trim(),
+        code: String((sub && sub.code) || "").trim(),
+        group: String((sub && sub.group) || (isGroupClass(cleanName) ? "আবশ্যিক" : "সাধারণ")).trim(),
+        sectionOnly: Boolean(sub && sub.sectionOnly)
+      })).filter(sub => sub.name);
+    }
+    return rec;
+  });
+  const books = Array.isArray(boardBooks)
+    ? boardBooks.map(b => typeof b === "string"
+      ? { title: b.trim(), group: isGroupClass(cleanName) ? "আবশ্যিক" : "সাধারণ" }
+      : { title: String((b && b.title) || "").trim(), group: String((b && b.group) || (isGroupClass(cleanName) ? "আবশ্যিক" : "সাধারণ")).trim() }).filter(b => b.title)
+    : (DEFAULT_BOARD_BOOKS[cleanName] || []).map(b => ({ ...b }));
+  const activities = Array.isArray(extraActivities)
+    ? extraActivities.map(a => String(a || "").trim()).filter(Boolean)
+    : [...DEFAULT_EXTRA_ACTIVITIES];
+  return {
+    id,
+    name: cleanName,
+    sectionDetails: details,
+    sections: details.map(s => s.name).join(", "),
+    room: details.map(s => s.room).join(", "),
+    capacity: details.reduce((sum, s) => sum + (+s.capacity || 0), 0),
+    boardBooks: books,
+    extraActivities: activities
+  };
+}
+function defaultClasses() {
+  return DEFAULT_CLASS_SPECS.map((spec, idx) => {
+    const base = spec.floor * 100 + spec.offset;
+    const secList = defaultSectionNamesForClass(spec.name);
+    const details = secList.map((secName, sIdx) => ({
+      name: secName,
+      room: toBnNum(base + sIdx + 1),
+      capacity: spec.capacity
+    }));
+    return buildClassRecord("cls-" + (idx + 1), spec.name, details, DEFAULT_BOARD_BOOKS[spec.name], DEFAULT_EXTRA_ACTIVITIES);
+  });
+}
+function normalizeClassSections(c) {
+  const defSecs = defaultSectionNamesForClass(c && c.name);
+  if (c && Array.isArray(c.sectionDetails)) {
+    return c.sectionDetails.map((sec, idx) => {
+      const item = {
+        name: sec.name || defSecs[idx] || toBnNum(idx + 1),
+        room: sec.room || "—",
+        capacity: +sec.capacity || 0
+      };
+      if (Array.isArray(sec.subjects)) item.subjects = sec.subjects;
+      return item;
+    });
+  }
+  const names = String((c && c.sections) || defSecs.join(", ")).split(",").map(s => s.trim()).filter(Boolean);
+  const rooms = String((c && c.room) || "").split(",").map(s => s.trim()).filter(Boolean);
+  const totalCap = +(c && c.capacity) || 0;
+  const count = names.length || 1;
+  const perCap = count ? Math.round(totalCap / count) : totalCap;
+  return names.map((nm, idx) => ({
+    name: nm,
+    room: rooms[idx] || rooms[0] || "—",
+    capacity: perCap
+  }));
+}
+function inferStreamForSection(secName) {
+  const s = String(secName || "").trim();
+  if (!s) return "";
+  if (GROUP_SECTION_NAMES.includes(s)) return s;
+  const low = s.toLowerCase();
+  if (s.includes("বিজ্ঞান") || low.includes("science") || s.includes("সাইন্স")) return "সাইন্স";
+  if (s.includes("বাণিজ্য") || s.includes("ব্যবসা") || low.includes("commerce") || low.includes("business") || s.includes("ইকমার্স")) return "ইকমার্স";
+  if (s.includes("মানবিক") || low.includes("humanities") || low.includes("arts")) return "মানবিক";
+  return "";
+}
+function sectionMatchesSubjectGroup(clsName, secName, grp) {
+  const g = String(grp || "সাধারণ").trim();
+  const matchedStream = inferStreamForSection(secName);
+  const isStreamSec = Boolean(matchedStream);
+  const clsStream = isGroupClass(clsName) || isStreamSec;
+  if (!clsStream) return true;
+  if (isStreamSec) {
+    return g === "আবশ্যিক" || g === matchedStream || g === String(secName || "").trim() || g === "সাধারণ" || g === "ঐচ্ছিক" || g === "এক্সট্রা অ্যাকটিভিটিস";
+  }
+  return g === "আবশ্যিক" || g === "সাধারণ" || g === "ঐচ্ছিক" || g === "এক্সট্রা অ্যাকটিভিটিস";
+}
+function subjectAppliesToSection(sb, clsName, secName) {
+  if (!sb) return false;
+  const matchCls = sb.classes === clsName || sb.classes === "সব শ্রেণি";
+  if (!matchCls) return false;
+  const sbSec = String(sb.section || "সব শাখা").trim();
+  if (sbSec && sbSec !== "সব শাখা") {
+    return sbSec === String(secName || "").trim();
+  }
+  return sectionMatchesSubjectGroup(clsName, secName, sb.group || "সাধারণ");
+}
+function defaultSectionSubjectsFor(c, sec, allSubjects) {
+  const clsName = (c && c.name) || "";
+  const books = normalizeBoardBooks(c);
+  const activities = normalizeExtraActivities(c);
+  const secName = String((sec && sec.name) || "").trim();
+  const matchesSectionGroup = grp => sectionMatchesSubjectGroup(clsName, secName, grp);
+
+  const cIdx = Math.max(0, CLASS_NAMES.indexOf(clsName));
+  const result = [];
+  const seen = new Set();
+  const pushUnique = (id, name, code, group, isSectionOnly) => {
+    const cleanName = String(name || "").trim();
+    if (!cleanName) return;
+    const cleanGroup = String(group || (isGroupClass(clsName) ? "আবশ্যিক" : "সাধারণ")).trim();
+    const key = cleanName.toLowerCase() + "::" + cleanGroup.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push({
+      id: id || ("sec-sub-" + (cIdx + 1) + "-" + result.length),
+      name: cleanName,
+      code: String(code || "").trim(),
+      group: cleanGroup,
+      sectionOnly: Boolean(isSectionOnly)
+    });
+  };
+
+  (allSubjects || []).forEach(sb => {
+    if (sb && sb.classes === clsName && sb.section && sb.section !== "সব শাখা" && String(sb.section).trim() === secName) {
+      pushUnique(sb.id, sb.name, sb.code || "", sb.group || "সাধারণ", true);
+    }
+  });
+
+  books.filter(b => matchesSectionGroup(b.group)).forEach((b, bIdx) => {
+    pushUnique(
+      "sec-bb-" + (cIdx + 1) + "-" + bIdx,
+      b.title,
+      String((cIdx + 1) * 100 + bIdx + 1),
+      b.group || (isGroupClass(clsName) ? "আবশ্যিক" : "সাধারণ"),
+      false
+    );
+  });
+
+  activities.forEach((act, aIdx) => {
+    pushUnique(
+      "sec-ea-" + (cIdx + 1) + "-" + aIdx,
+      act,
+      "EA-" + (cIdx + 1) + String(aIdx + 1).padStart(2, "0"),
+      "এক্সট্রা অ্যাকটিভিটিস",
+      false
+    );
+  });
+
+  (allSubjects || []).forEach(sb => {
+    if (subjectAppliesToSection(sb, clsName, secName)) {
+      const isSpecific = Boolean(sb.section && sb.section !== "সব শাখা");
+      pushUnique(sb.id, sb.name, sb.code || "", sb.group || "সাধারণ", isSpecific);
+    }
+  });
+
+  return result;
+}
+function normalizeSectionSubjects(c, sec, allSubjects) {
+  const clsName = (c && c.name) || "";
+  if (sec && Array.isArray(sec.subjects)) {
+    return sec.subjects.map((sub, idx) => ({
+      id: (sub && sub.id) || ("sec-sub-" + idx),
+      name: String((sub && (sub.name || sub.title)) || "").trim(),
+      code: String((sub && sub.code) || "").trim(),
+      group: String((sub && sub.group) || (isGroupClass(clsName) ? "আবশ্যিক" : "সাধারণ")).trim(),
+      sectionOnly: Boolean(sub && sub.sectionOnly)
+    })).filter(sub => sub.name);
+  }
+  return defaultSectionSubjectsFor(c, sec, allSubjects);
+}
+function classTotalCapacity(c) {
+  return normalizeClassSections(c).reduce((sum, sec) => sum + (+sec.capacity || 0), 0);
+}
+function classOptionsOf(data) {
+  const fromData = ((data && data.classes) || []).map(c => c.name).filter(Boolean);
+  return Array.from(new Set([...CLASS_NAMES, ...fromData]));
+}
 const taka = n => "৳" + Number(n || 0).toLocaleString("en-IN");
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const bnDate = d => { try { return new Date(d + "T00:00:00").toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return d; } };
@@ -60,8 +515,82 @@ function yearlyTotals(data) {
   ((data && data.students) || []).forEach(x => { const t = costTotalsOf(costsForStudent(data, x.id)); acc.total += t.total; acc.paid += t.paid; acc.due += t.due; });
   return acc;
 }
+const DEFAULT_STUDENTS_SEED = [
+  // প্লে (ক, খ, গ)
+  { id: "s-play-1", name: "আরিয়ান আহমেদ", cls: "প্লে", section: "ক", roll: 1, guardian: "মোঃ রাশেদ আহমেদ", phone: "01711-210101", paid: 33500 },
+  { id: "s-play-2", name: "মুনতাহা তাসনিম", cls: "প্লে", section: "খ", roll: 2, guardian: "সাদিয়া আফরিন", phone: "01812-210102", paid: 20000 },
+  { id: "s-play-3", name: "জায়ান করিম", cls: "প্লে", section: "গ", roll: 3, guardian: "মোঃ করিম উল্লাহ", phone: "01913-210103", paid: 12000 },
+  // নার্সারি (ক, খ, গ)
+  { id: "s-nursery-1", name: "তানিশা জান্নাত", cls: "নার্সারি", section: "ক", roll: 1, guardian: "ফারজানা ইয়াসমিন", phone: "01711-210201", paid: 33500 },
+  { id: "s-nursery-2", name: "আহনাফ ইসলাম", cls: "নার্সারি", section: "খ", roll: 2, guardian: "মোঃ শফিকুল ইসলাম", phone: "01812-210202", paid: 15000 },
+  { id: "s-nursery-3", name: "নুসাইবা হক", cls: "নার্সারি", section: "গ", roll: 3, guardian: "নাজমুল হক", phone: "01614-210203", paid: 5000 },
+  // কেজি (ক, খ, গ)
+  { id: "s-kg-1", name: "রাইয়ান হাসান", cls: "কেজি", section: "ক", roll: 1, guardian: "মাহমুদুল হাসান", phone: "01711-210301", paid: 33500 },
+  { id: "s-kg-2", name: "সাবিহা সুলতানা", cls: "কেজি", section: "খ", roll: 2, guardian: "তাহমিনা আক্তার", phone: "01913-210302", paid: 25000 },
+  { id: "s-kg-3", name: "ইহসান মাহমুদ", cls: "কেজি", section: "গ", roll: 3, guardian: "তারেক মাহমুদ", phone: "01515-210303", paid: 10000 },
+  // প্রথম (ক, খ, গ)
+  { id: "s-one-1", name: "আফরান চৌধুরী", cls: "প্রথম", section: "ক", roll: 1, guardian: "জাহাঙ্গীর চৌধুরী", phone: "01711-210401", paid: 33500 },
+  { id: "s-one-2", name: "মেহজাবিন নূর", cls: "প্রথম", section: "খ", roll: 2, guardian: "নূরজাহান বেগম", phone: "01812-210402", paid: 21500 },
+  { id: "s-one-3", name: "তাওহীদ রহমান", cls: "প্রথম", section: "গ", roll: 3, guardian: "মশিউর রহমান", phone: "01614-210403", paid: 0 },
+  // দ্বিতীয় (ক, খ, গ)
+  { id: "s-two-1", name: "নাবিহা আক্তার", cls: "দ্বিতীয়", section: "ক", roll: 1, guardian: "মোঃ হাবিবুর রহমান", phone: "01711-210501", paid: 33500 },
+  { id: "s-two-2", name: "সাফওয়ান মিয়া", cls: "দ্বিতীয়", section: "খ", roll: 2, guardian: "জাকির মিয়া", phone: "01913-210502", paid: 18500 },
+  { id: "s-two-3", name: "তাসফিয়া করিম", cls: "দ্বিতীয়", section: "গ", roll: 3, guardian: "রেজাউল করিম", phone: "01515-210503", paid: 12000 },
+  // তৃতীয় (ক, খ, গ)
+  { id: "s-three-1", name: "ফাহিম মুনতাসির", cls: "তৃতীয়", section: "ক", roll: 1, guardian: "মোঃ আজিজুল হক", phone: "01711-210601", paid: 33500 },
+  { id: "s-three-2", name: "আরিবা তাবাসসুম", cls: "তৃতীয়", section: "খ", roll: 2, guardian: "শাহানা পারভীন", phone: "01812-210602", paid: 24000 },
+  { id: "s-three-3", name: "নাফিস ইকবাল", cls: "তৃতীয়", section: "গ", roll: 3, guardian: "মোঃ ইকবাল হোসেন", phone: "01614-210603", paid: 7500 },
+  // চতুর্থ (ক, খ, গ)
+  { id: "s-four-1", name: "সাদিয়া ইসলাম", cls: "চতুর্থ", section: "ক", roll: 1, guardian: "মোঃ নজরুল ইসলাম", phone: "01711-210701", paid: 33500 },
+  { id: "s-four-2", name: "তানভীর আলম", cls: "চতুর্থ", section: "খ", roll: 2, guardian: "খোরশেদ আলম", phone: "01913-210702", paid: 16500 },
+  { id: "s-four-3", name: "মালিহা রহমান", cls: "চতুর্থ", section: "গ", roll: 3, guardian: "সাইফুর রহমান", phone: "01515-210703", paid: 5000 },
+  // পঞ্চম (ক, খ, গ)
+  { id: "s-five-1", name: "তাহমিদ সাদিক", cls: "পঞ্চম", section: "ক", roll: 1, guardian: "মোঃ সাদিকুর রহমান", phone: "01711-210801", paid: 33500 },
+  { id: "s-five-2", name: "রাইসা মনি", cls: "পঞ্চম", section: "খ", roll: 2, guardian: "রোকসানা আক্তার", phone: "01812-210802", paid: 27000 },
+  { id: "s-five-3", name: "সাকিব আল হাসান", cls: "পঞ্চম", section: "গ", roll: 3, guardian: "মোঃ ইমরান হোসেন", phone: "01614-210803", paid: 10000 },
+  // ষষ্ঠ (ক, খ, গ)
+  { id: "s-six-1", name: "তানভীর হাসান", cls: "ষষ্ঠ", section: "ক", roll: 1, guardian: "মোঃ কামরুল হাসান", phone: "01711-210901", paid: 33500 },
+  { id: "s-six-2", name: "মারিয়া আক্তার", cls: "ষষ্ঠ", section: "খ", roll: 2, guardian: "মোঃ সেলিম মিয়া", phone: "01913-210902", paid: 19500 },
+  { id: "s-six-3", name: "আরিফুল ইসলাম", cls: "ষষ্ঠ", section: "গ", roll: 3, guardian: "মোঃ রফিকুল ইসলাম", phone: "01515-210903", paid: 8000 },
+  // সপ্তম (ক, খ, গ)
+  { id: "s-seven-1", name: "জান্নাতুল ফেরদৌস", cls: "সপ্তম", section: "ক", roll: 1, guardian: "ফরিদা ইয়াসমিন", phone: "01711-211001", paid: 33500 },
+  { id: "s-seven-2", name: "নাঈমুর রহমান", cls: "সপ্তম", section: "খ", roll: 2, guardian: "মোঃ মিজানুর রহমান", phone: "01812-211002", paid: 22000 },
+  { id: "s-seven-3", name: "তাসনিম তাবাসসুম", cls: "সপ্তম", section: "গ", roll: 3, guardian: "নাসরিন সুলতানা", phone: "01614-211003", paid: 0 },
+  // অষ্টম (ক, খ, গ)
+  { id: "s-eight-1", name: "রাফিউজ্জামান খান", cls: "অষ্টম", section: "ক", roll: 1, guardian: "আসাদুজ্জামান খান", phone: "01711-211101", paid: 33500 },
+  { id: "s-eight-2", name: "সুমাইয়া খাতুন", cls: "অষ্টম", section: "খ", roll: 2, guardian: "মোঃ আব্দুল মালেক", phone: "01913-211102", paid: 26000 },
+  { id: "s-eight-3", name: "মেহেদী হাসান মিরাজ", cls: "অষ্টম", section: "গ", roll: 3, guardian: "মোঃ আনোয়ার হোসেন", phone: "01515-211103", paid: 14000 },
+  // নবম (সাইন্স, ইকমার্স, মানবিক)
+  { id: "s-nine-1", name: "আবীর হোসেন", cls: "নবম", section: "সাইন্স", roll: 1, guardian: "মোঃ মোজাম্মেল হক", phone: "01711-211201", paid: 33500 },
+  { id: "s-nine-2", name: "নুসরাত জাহান", cls: "নবম", section: "ইকমার্স", roll: 2, guardian: "মোঃ দেলোয়ার হোসেন", phone: "01812-211202", paid: 21000 },
+  { id: "s-nine-3", name: "সাব্বির আহমেদ", cls: "নবম", section: "মানবিক", roll: 3, guardian: "মোঃ জসিম উদ্দিন", phone: "01614-211203", paid: 9500 },
+  // দশম (সাইন্স, ইকমার্স, মানবিক)
+  { id: "s-ten-1", name: "ফারহান সাদিক", cls: "দশম", section: "সাইন্স", roll: 1, guardian: "মোঃ আমিনুল ইসলাম", phone: "01711-211301", paid: 33500 },
+  { id: "s-ten-2", name: "তানহা তাবাসসুম", cls: "দশম", section: "ইকমার্স", roll: 2, guardian: "সেলিনা বেগম", phone: "01913-211302", paid: 28000 },
+  { id: "s-ten-3", name: "রাকিবুল ইসলাম", cls: "দশম", section: "মানবিক", roll: 3, guardian: "মোঃ মনিরুল ইসলাম", phone: "01515-211303", paid: 15000 },
+  // একাদশ (সাইন্স, ইকমার্স, মানবিক)
+  { id: "s-eleven-1", name: "মুশফিকুর রহিম", cls: "একাদশ", section: "সাইন্স", roll: 1, guardian: "মোঃ মাহবুবুর রহমান", phone: "01711-211401", paid: 33500 },
+  { id: "s-eleven-2", name: "লামিয়া ইসলাম", cls: "একাদশ", section: "ইকমার্স", roll: 2, guardian: "মোঃ শহীদুল ইসলাম", phone: "01812-211402", paid: 20500 },
+  { id: "s-eleven-3", name: "তৌহিদুল ইসলাম", cls: "একাদশ", section: "মানবিক", roll: 3, guardian: "আব্দুল জলিল", phone: "01614-211403", paid: 5000 },
+  // দ্বাদশ (সাইন্স, ইকমার্স, মানবিক)
+  { id: "s-twelve-1", name: "আশরাফুল আলম", cls: "দ্বাদশ", section: "সাইন্স", roll: 1, guardian: "মোঃ শামসুল আলম", phone: "01711-211501", paid: 33500 },
+  { id: "s-twelve-2", name: "সাদিয়া আফরোজ", cls: "দ্বাদশ", section: "ইকমার্স", roll: 2, guardian: "মাহফুজা খাতুন", phone: "01913-211502", paid: 24500 },
+  { id: "s-twelve-3", name: "হাসিবুল হাসান", cls: "দ্বাদশ", section: "মানবিক", roll: 3, guardian: "মোঃ ফিরোজ কবির", phone: "01515-211503", paid: 12500 }
+];
+function defaultStudentsData(costTypes) {
+  const types = costTypes && costTypes.length ? costTypes : DEFAULT_COST_TYPES;
+  const studentCosts = [];
+  const students = DEFAULT_STUDENTS_SEED.map(st => {
+    const items = makeStudentCosts(st.id, types, st.paid);
+    studentCosts.push(...items);
+    return { ...st, payable: costTotalsOf(items).total };
+  });
+  return { students, studentCosts };
+}
 /* ---------- প্রাথমিক (খালি) অবস্থা ---------- */
 function emptyData() {
+  const costTypes = defaultCostTypes();
+  const { students, studentCosts } = defaultStudentsData(costTypes);
   return {
     settings: {
       name: "আমার স্কুল", motto: "জ্ঞানেই আলো, চরিত্রেই শক্তি", established: "",
@@ -69,11 +598,11 @@ function emptyData() {
       principalName: "", principalMsg: "শিক্ষাই জাতির মেরুদণ্ড। আমাদের লক্ষ্য প্রতিটি শিক্ষার্থীকে জ্ঞান, চরিত্র ও মানবিক মূল্যবোধে গড়ে তোলা — যাতে তারা আগামীর বাংলাদেশ গড়ার কারিগর হতে পারে।",
       fb: "", yt: "", ig: ""
     },
-    students: [], teachers: [], classes: [], subjects: [],
+    students, teachers: [], classes: defaultClasses(), subjects: defaultBoardSubjects(),
     notices: [], admissions: [], attendance: {}, results: {},
     books: [], loans: [], routes: [],
     employees: [], departments: [], officeAttendance: {}, leaves: [], payroll: [], tasks: [], expenses: [], officeDocs: [],
-    costTypes: defaultCostTypes(), studentCosts: []
+    costTypes, studentCosts
   };
 }
 
@@ -87,30 +616,21 @@ function sampleData() {
     principalMsg: "আমাদের বিদ্যালয়ে প্রতিটি শিশুই একেকটি সম্ভাবনা। আমরা শুধু পাঠ্যপুস্তকের জ্ঞান নয়, শৃঙ্খলা, সততা ও মানবিকতাও শেখাই। অভিভাবকদের সহযোগিতায় আমাদের শিক্ষার্থীরা প্রতি বছর বোর্ড পরীক্ষায় চমৎকার ফল করছে।",
     fb: "", yt: "", ig: ""
   };
-  d.classes = [
-    { id: "c6", name: "ষষ্ঠ", sections: "ক, খ", room: "১০১", capacity: 60 },
-    { id: "c9", name: "নবম", sections: "ক", room: "২০৩", capacity: 45 },
-    { id: "c10", name: "দশম", sections: "ক", room: "২০৫", capacity: 40 }
-  ];
-  d.subjects = SUBJECTS.map((s, i) => ({ id: "sub" + i, name: s, code: "10" + (i + 1), classes: "সব শ্রেণি" }));
+  d.classes = defaultClasses();
+  d.subjects = defaultBoardSubjects();
   d.teachers = [
     { id: "t1", name: "মোঃ রফিকুল ইসলাম", subject: "গণিত", phone: "01XXX-XXXXXX", qualification: "এম.এসসি (গণিত)", photo: "" },
     { id: "t2", name: "ফাতেমা বেগম", subject: "বাংলা", phone: "01XXX-XXXXXX", qualification: "এম.এ (বাংলা)", photo: "" },
     { id: "t3", name: "আব্দুল্লাহ আল মামুন", subject: "ইংরেজি", phone: "01XXX-XXXXXX", qualification: "এম.এ (ইংরেজি)", photo: "" },
     { id: "t4", name: "শারমিন আক্তার", subject: "বিজ্ঞান", phone: "01XXX-XXXXXX", qualification: "এম.এসসি (পদার্থবিজ্ঞান)", photo: "" }
   ];
-  const names = ["তানভীর হাসান", "মারিয়া আক্তার", "সাকিব রহমান", "নুসরাত জাহান", "আরিফুল ইসলাম", "সুমাইয়া খাতুন", "রাকিব হোসেন", "জান্নাতুল ফেরদৌস"];
-  d.students = names.map((n, i) => ({
-    id: "s" + (i + 1), name: n, cls: ["ষষ্ঠ", "নবম", "দশম"][i % 3], roll: i + 1,
-    section: "ক", guardian: "অভিভাবক " + (i + 1), phone: "01XXX-XXXXXX",
-    payable: 12000, paid: i === 0 ? 800 : 0
-  }));
   d.costTypes = defaultCostTypes();
-  d.studentCosts = [];
-  d.students.forEach(st => { const items = makeStudentCosts(st.id, d.costTypes, st.paid); d.studentCosts.push(...items); st.payable = items.reduce((a, c) => a + c.amount, 0); });
+  const seeded = defaultStudentsData(d.costTypes);
+  d.students = seeded.students;
+  d.studentCosts = seeded.studentCosts;
   d.notices = [
     { id: "n1", title: "বার্ষিক পরীক্ষার সময়সূচি প্রকাশ", date: todayStr(), body: "আগামী মাসের প্রথম সপ্তাহ থেকে বার্ষিক পরীক্ষা শুরু হবে। বিস্তারিত রুটিন শ্রেণি শিক্ষকের কাছ থেকে সংগ্রহ করুন।" },
-    { id: "n2", title: "নতুন শিক্ষাবর্ষে ভর্তি চলছে", date: todayStr(), body: "ষষ্ঠ থেকে নবম শ্রেণিতে সীমিত আসনে ভর্তি চলছে। আগ্রহীরা অফিসে যোগাযোগ করুন অথবা অনলাইনে আবেদন করুন।" }
+    { id: "n2", title: "নতুন শিক্ষাবর্ষে ভর্তি চলছে", date: todayStr(), body: "প্লে থেকে দ্বাদশ শ্রেণিতে তিনটি শাখায় সীমিত আসনে ভর্তি চলছে। আগ্রহীরা অফিসে যোগাযোগ করুন অথবা অনলাইনে আবেদন করুন।" }
   ];
   d.books = [
     { id: "b1", title: "বাংলা সাহিত্য সংকলন", author: "সম্পাদনা পরিষদ", copies: 12 },
@@ -173,10 +693,11 @@ const IC = {
 /* ================================================================
    ল্যান্ডিং পেজ — হেডার, স্লাইডশো বডি, ফুটার
 ================================================================ */
-function Landing({ data, goConsole, openLogin, openAdmission, toast }) {
+function Landing({ data, user, goConsole, openLogin, logout, openAdmission, toast }) {
   const s = data.settings;
   const [slide, setSlide] = useState(0);
   const [page, setPage] = useState("home"); // home | notices | teachers | principal | contact
+  const [openLandingSec, setOpenLandingSec] = useState(null);
   const tRef = useRef(null);
   useEffect(() => {
     const t = setInterval(() => setSlide(p => (p + 1) % SLIDES.length), 4500);
@@ -272,8 +793,15 @@ function Landing({ data, goConsole, openLogin, openAdmission, toast }) {
           <p className="school-motto">{s.motto}{s.established ? " · স্থাপিত: " + s.established : ""}</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-ghost" onClick={goConsole}>কনসোল</button>
-          <button className="btn btn-brand" onClick={openLogin}>লগইন করুন</button>
+          {user ? (
+            <React.Fragment>
+              <span className="pill pill-ok" style={{ alignSelf: "center" }}>{user.isMasterAdmin || user.isSuper ? "★ মাস্টার অ্যাডমিন" : user.id}</span>
+              <button className="btn btn-ghost" onClick={goConsole}>কনসোল খুলুন</button>
+              <button className="btn btn-accent" onClick={logout}>লগআউট</button>
+            </React.Fragment>
+          ) : (
+            <button className="btn btn-brand" onClick={openLogin}>লগইন করুন</button>
+          )}
         </div>
       </div></header>
 
@@ -348,13 +876,166 @@ function Landing({ data, goConsole, openLogin, openAdmission, toast }) {
           </section>
 
           <section className="section">
-            <div className="sec-head"><h2>শ্রেণিসমূহ</h2></div>
+            <div className="sec-head">
+              <h2>শ্রেণিসমূহ (প্লে – দ্বাদশ)</h2>
+              <p>প্লে–অষ্টম: ক, খ, গ শাখা · নবম–দ্বাদশ: সাইন্স, ইকমার্স ও মানবিক শাখা · বোর্ড বই ও এক্সট্রা অ্যাকটিভিটিস</p>
+            </div>
             {data.classes.length === 0
               ? <div className="card empty"><b>শ্রেণি তথ্য নেই</b>কনসোল থেকে শ্রেণি যোগ করলে এখানে দেখা যাবে।</div>
-              : <div className="grid3">{data.classes.map(c => (
-                  <div className="card" key={c.id}><h3 style={{ margin: "0 0 4px" }}>{c.name} শ্রেণি</h3>
-                    <p style={{ margin: 0, color: "var(--ink2)", fontSize: "14.5px" }}>শাখা: {c.sections || "—"} · কক্ষ: {c.room || "—"} · আসন: {c.capacity || "—"}<br />শিক্ষার্থী: {data.students.filter(x => x.cls === c.name).length} জন</p></div>
-                ))}</div>}
+              : <div className="grid3">{data.classes.map(c => {
+                  const secs = normalizeClassSections(c);
+                  const books = normalizeBoardBooks(c);
+                  const activities = normalizeExtraActivities(c);
+                  const isStream = isGroupClass(c.name) || secs.some(s => GROUP_SECTION_NAMES.includes(s.name));
+                  const totalCap = secs.reduce((a, s) => a + (+s.capacity || 0), 0);
+                  const stuCount = data.students.filter(x => x.cls === c.name).length;
+                  const bookGroups = isStream ? ["আবশ্যিক", "সাইন্স", "ইকমার্স", "মানবিক"] : ["সাধারণ"];
+                  return (
+                    <div className="card" key={c.id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                          <h3 style={{ margin: 0 }}>{c.name} শ্রেণি</h3>
+                          <span style={{ fontSize: "13px", color: "var(--muted)" }}>মোট আসন: {totalCap} · শিক্ষার্থী: {stuCount} জন</span>
+                        </div>
+                        {isStream && (
+                          <div style={{ marginTop: 4, fontSize: "12.5px", fontWeight: 600, color: "var(--brand)" }}>
+                            {secs.length ? "বিভাগভিত্তিক আলাদা শাখা: " + secs.map(s => s.name).join(" · ") : "কোনো শাখা নেই"}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {secs.map((sec, idx) => {
+                          const secKey = c.id + "::" + idx;
+                          const isOpen = openLandingSec === secKey;
+                          const secSubs = normalizeSectionSubjects(c, sec, data.subjects);
+                          const acadSubs = secSubs.filter(sub => sub.group !== "এক্সট্রা অ্যাকটিভিটিস");
+                          const actSubs = secSubs.filter(sub => sub.group === "এক্সট্রা অ্যাকটিভিটিস");
+                          return (
+                            <div key={idx} style={{
+                              borderRadius: 7,
+                              background: isStream ? "var(--brand-soft)" : "var(--surface2)",
+                              color: isStream ? "var(--brand-dark)" : "var(--ink2)",
+                              border: isOpen ? "2px solid var(--brand)" : "1px solid var(--line)"
+                            }}>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setOpenLandingSec(prev => prev === secKey ? null : secKey)}
+                                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenLandingSec(prev => prev === secKey ? null : secKey); } }}
+                                style={{
+                                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: "13.5px",
+                                  padding: "7px 9px", cursor: "pointer", flexWrap: "wrap"
+                                }}
+                                title="এই শাখার সকল বিষয় দেখতে ক্লিক করুন"
+                              >
+                                <span><b>{isOpen ? "▾ " : "▸ "}{isStream ? "বিভাগ: " : "শাখা "}{sec.name}</b></span>
+                                <span>রুম: {sec.room}</span>
+                                <span>আসন: {sec.capacity}</span>
+                                <span style={{
+                                  fontSize: "12px", fontWeight: 700, padding: "2px 8px", borderRadius: 5,
+                                  background: isOpen ? "var(--brand)" : "var(--surface)",
+                                  color: isOpen ? "#fff" : "var(--brand)",
+                                  border: "1px solid var(--brand)"
+                                }}>
+                                  {isOpen ? "▾ " : "▸ "}যুক্ত বিষয় ({toBnNum(secSubs.length)})
+                                </span>
+                              </div>
+                              {isOpen && (
+                                <div style={{ padding: "8px 10px 10px", borderTop: "1px dashed var(--line)", background: "var(--surface)", borderRadius: "0 0 7px 7px", display: "grid", gap: 6 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                    <div style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--ink)" }}>
+                                      {c.name} শ্রেণি · {sec.name} শাখায় যুক্ত বিষয়সমূহ ({toBnNum(secSubs.length)}টি):
+                                    </div>
+                                    {user && (
+                                      <button type="button" className="mini-btn" onClick={() => goConsole(secKey)}>
+                                        কনসোলে এডিট/যোগ/ডিলিট করুন →
+                                      </button>
+                                    )}
+                                  </div>
+                                  {secSubs.length === 0
+                                    ? <div style={{ fontSize: "12.5px", color: "var(--muted)" }}>এই শাখায় কোনো বিষয় যোগ করা নেই।</div>
+                                    : <React.Fragment>
+                                        {acadSubs.length > 0 && (
+                                          <div>
+                                            <div style={{ fontSize: "11.5px", fontWeight: 700, color: "var(--brand)", marginBottom: 3 }}>পাঠ্যবই ও বিষয় ({toBnNum(acadSubs.length)}টি):</div>
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                              {acadSubs.map((sub, sIdx) => (
+                                                <span key={sub.id || sIdx} style={{
+                                                  fontSize: "12px", padding: "2px 7px", borderRadius: 5,
+                                                  background: "var(--surface2)", color: "var(--ink)", border: "1px solid var(--line)"
+                                                }}>
+                                                  {sub.name}{sub.group && sub.group !== "সাধারণ" ? " (" + sub.group + ")" : ""}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {actSubs.length > 0 && (
+                                          <div>
+                                            <div style={{ fontSize: "11.5px", fontWeight: 700, color: "var(--accent)", marginBottom: 3 }}>এক্সট্রা অ্যাকটিভিটিস ({toBnNum(actSubs.length)}টি):</div>
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                              {actSubs.map((sub, sIdx) => (
+                                                <span key={sub.id || sIdx} style={{
+                                                  fontSize: "12px", padding: "2px 7px", borderRadius: 5,
+                                                  background: "var(--accent-soft)", color: "var(--ink)", border: "1px solid var(--line)"
+                                                }}>
+                                                  {sub.name}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </React.Fragment>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {books.length > 0 && (
+                        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--ink)", marginBottom: 5 }}>
+                            বোর্ড বইসমূহ ({toBnNum(books.length)}টি)
+                          </div>
+                          {bookGroups.map(grp => {
+                            const grpBooks = books.filter(b => b.group === grp);
+                            if (grpBooks.length === 0) return null;
+                            return (
+                              <div key={grp} style={{ marginBottom: 5, fontSize: "12.5px", lineHeight: 1.45, color: "var(--ink2)" }}>
+                                {isStream && <b style={{ color: "var(--brand)" }}>{grp}: </b>}
+                                <span>{grpBooks.map(b => b.title).join(", ")}</span>
+                              </div>
+                            );
+                          })}
+                          {books.filter(b => !bookGroups.includes(b.group)).length > 0 && (
+                            <div style={{ fontSize: "12.5px", lineHeight: 1.45, color: "var(--ink2)" }}>
+                              <span>{books.filter(b => !bookGroups.includes(b.group)).map(b => b.title).join(", ")}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {activities.length > 0 && (
+                        <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 8 }}>
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent)", marginBottom: 5 }}>
+                            এক্সট্রা অ্যাকটিভিটিস ({toBnNum(activities.length)}টি বিষয়)
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                            {activities.map((act, aIdx) => (
+                              <span key={aIdx} style={{
+                                fontSize: "12px",
+                                padding: "2px 8px",
+                                borderRadius: 6,
+                                background: "var(--accent-soft)",
+                                color: "var(--ink)",
+                                border: "1px solid var(--line)"
+                              }}>{act}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}</div>}
           </section>
 
           <div className="admit-banner">
@@ -411,7 +1092,7 @@ function Landing({ data, goConsole, openLogin, openAdmission, toast }) {
               <li><button onClick={() => navTo("teachers")}>শিক্ষকবৃন্দ</button></li>
               <li><button onClick={() => navTo("principal")}>প্রধানের বার্তা</button></li>
               <li><button onClick={openAdmission}>অনলাইন ভর্তি</button></li>
-              <li><button onClick={openLogin}>লগইন</button></li>
+              <li>{user ? <button onClick={goConsole}>কনসোল খুলুন</button> : <button onClick={openLogin}>লগইন</button>}</li>
             </ul>
           </div>
           <div>
@@ -430,31 +1111,123 @@ function Landing({ data, goConsole, openLogin, openAdmission, toast }) {
 }
 
 /* ================================================================
-   লগইন — ডেমো লগইন (আগের সিস্টেম)
-   অ্যাডমিন / শিক্ষক ও শিক্ষার্থী ট্যাব, সুপার অ্যাডমিন আইডি বসানোর
-   বোতাম; যেকোনো পাসওয়ার্ড দিলেই কনসোল খোলে — পাসওয়ার্ড যাচাই হয় না।
-   কোনো সার্ভার লগইন বা পাসওয়ার্ড যাচাই নেই।
+   লগইন — মাস্টার অ্যাডমিন (সার্ভার-যাচাইকৃত পূর্ণ অ্যাক্সেস) ও সীমিত ভূমিকা
 ================================================================ */
-const SUPER_ADMIN_ID = "sizubd333@gmail.com";
+const MASTER_ADMIN_ID = "sizu111@gmail.com";
 
 function LoginModal({ close, onLogin }) {
-  const [role, setRole] = useState("admin");
-  const [id, setId] = useState("");
+  const [role, setRole] = useState("master");
+  const [id, setId] = useState(MASTER_ADMIN_ID);
   const [pass, setPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
   const [year, setYear] = useState("২০২৬");
-  const submit = e => {
-    e.preventDefault();
-    if (!id.trim() || !pass.trim()) return;
-    onLogin({ role, id: id.trim(), isSuper: id.trim().toLowerCase() === SUPER_ADMIN_ID, via: "demo" });
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [authStatus, setAuthStatus] = useState({ loading: true, needsMasterSetup: false, masterAdminEmail: MASTER_ADMIN_ID });
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/status", { cache: "no-store" })
+      .then(r => r.json())
+      .then(d => {
+        if (!active) return;
+        setAuthStatus({
+          loading: false,
+          needsMasterSetup: Boolean(d.needsMasterSetup),
+          masterAdminEmail: d.masterAdminEmail || MASTER_ADMIN_ID,
+        });
+      })
+      .catch(() => {
+        if (active) setAuthStatus({ loading: false, needsMasterSetup: false, masterAdminEmail: MASTER_ADMIN_ID });
+      });
+    return () => { active = false; };
+  }, []);
+
+  const switchRole = nextRole => {
+    setRole(nextRole);
+    setError("");
+    setPass("");
+    setConfirmPass("");
+    if (nextRole === "master") setId(authStatus.masterAdminEmail || MASTER_ADMIN_ID);
+    else setId("");
   };
+
+  const submit = async e => {
+    e.preventDefault();
+    setError("");
+    if (!id.trim() || !pass) {
+      setError("ইউজার আইডি ও পাসওয়ার্ড উভয়ই দিন।");
+      return;
+    }
+
+    if (role === "master" && authStatus.needsMasterSetup) {
+      if (pass.length < 6) {
+        setError("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+        return;
+      }
+      if (pass !== confirmPass) {
+        setError("দুইটি পাসওয়ার্ড মেলেনি — আবার যাচাই করুন।");
+        return;
+      }
+      setBusy(true);
+      try {
+        const res = await fetch("/api/auth/setup-master", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: id.trim(), password: pass }),
+        });
+        const payload = await res.json();
+        if (!res.ok) {
+          setError(payload.message || "সেটআপ সম্পন্ন করা যায়নি।");
+          if (res.status === 409) {
+            setAuthStatus(prev => ({ ...prev, needsMasterSetup: false }));
+          }
+          return;
+        }
+        onLogin(payload);
+      } catch {
+        setError("সার্ভারের সাথে সংযোগ করা যায়নি।");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, id: id.trim(), password: pass, year }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        setError(payload.message || "লগইন ব্যর্থ হয়েছে।");
+        if (payload.needsMasterSetup) {
+          setAuthStatus(prev => ({ ...prev, needsMasterSetup: true }));
+        }
+        return;
+      }
+      onLogin(payload);
+    } catch {
+      setError("সার্ভারের সাথে সংযোগ করা যায়নি।");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const isMasterTab = role === "master";
+  const showSetup = isMasterTab && authStatus.needsMasterSetup;
+
   return (
     <div className="modal-bg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
       <form className="modal" onSubmit={submit}>
         <h2>লগইন করুন</h2>
-        <p className="sub">আপনার ভূমিকা বেছে নিয়ে আইডি ও পাসওয়ার্ড দিয়ে কনসোলে প্রবেশ করুন।</p>
-        <div className="role-tabs">
-          <button type="button" className={role === "admin" ? "on" : ""} onClick={() => setRole("admin")}>অ্যাডমিন / শিক্ষক</button>
-          <button type="button" className={role === "student" ? "on" : ""} onClick={() => setRole("student")}>শিক্ষার্থী</button>
+        <p className="sub">মাস্টার অ্যাডমিন দিয়ে প্রবেশ করলে ওয়েবসাইটের সকল মডিউল ও সেটিংসের পূর্ণ অ্যাক্সেস পাবেন।</p>
+        <div className="role-tabs three">
+          <button type="button" className={role === "master" ? "on" : ""} onClick={() => switchRole("master")}>মাস্টার অ্যাডমিন</button>
+          <button type="button" className={role === "admin" ? "on" : ""} onClick={() => switchRole("admin")}>শিক্ষক / স্টাফ</button>
+          <button type="button" className={role === "student" ? "on" : ""} onClick={() => switchRole("student")}>শিক্ষার্থী</button>
         </div>
         {role === "student" && (
           <div style={{ marginBottom: 12 }}>
@@ -465,22 +1238,60 @@ function LoginModal({ close, onLogin }) {
           </div>
         )}
         <div style={{ marginBottom: 12 }}>
-          <label>{role === "student" ? "শিক্ষার্থী আইডি" : "ইউজার আইডি / ইমেইল"}</label>
-          <input type="text" value={id} onChange={e => setId(e.target.value)} placeholder={role === "student" ? "যেমন: 101" : "আপনার আইডি লিখুন"} autoComplete="username" />
+          <label>{role === "student" ? "শিক্ষার্থী আইডি" : isMasterTab ? "মাস্টার অ্যাডমিন ইউজার আইডি" : "শিক্ষক / স্টাফ আইডি"}</label>
+          <input
+            type="text"
+            value={id}
+            onChange={e => setId(e.target.value)}
+            readOnly={showSetup}
+            placeholder={role === "student" ? "যেমন: 101" : isMasterTab ? authStatus.masterAdminEmail : "আপনার আইডি লিখুন"}
+            autoComplete="username"
+          />
         </div>
-        <div>
-          <label>পাসওয়ার্ড</label>
-          <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="পাসওয়ার্ড লিখুন" autoComplete="current-password" />
+        <div style={{ marginBottom: showSetup ? 12 : 0 }}>
+          <label>{showSetup ? "মাস্টার অ্যাডমিন পাসওয়ার্ড সেট করুন" : "পাসওয়ার্ড"}</label>
+          <input
+            type="password"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            placeholder={showSetup ? "নতুন পাসওয়ার্ড লিখুন (কমপক্ষে ৬ অক্ষর)" : "পাসওয়ার্ড লিখুন"}
+            autoComplete={showSetup ? "new-password" : "current-password"}
+          />
         </div>
-        <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 12 }}
-          onClick={() => { setRole("admin"); setId(SUPER_ADMIN_ID); }}>
-          সুপার অ্যাডমিন আইডি বসান ({SUPER_ADMIN_ID})
-        </button>
+        {showSetup && (
+          <div>
+            <label>পাসওয়ার্ড নিশ্চিত করুন</label>
+            <input
+              type="password"
+              value={confirmPass}
+              onChange={e => setConfirmPass(e.target.value)}
+              placeholder="পাসওয়ার্ডটি আবার লিখুন"
+              autoComplete="new-password"
+            />
+          </div>
+        )}
+        {isMasterTab && !showSetup && (
+          <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 12 }}
+            onClick={() => { setId(authStatus.masterAdminEmail || MASTER_ADMIN_ID); setError(""); }}>
+            মাস্টার অ্যাডমিন আইডি বসান ({authStatus.masterAdminEmail || MASTER_ADMIN_ID})
+          </button>
+        )}
+        {error && (
+          <div role="alert" style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, background: "var(--danger-soft)", color: "var(--danger)", fontSize: "13.5px", fontWeight: 600 }}>
+            {error}
+          </div>
+        )}
         <div className="note-box">
-          <b>ডেমো লগইন:</b> যেকোনো পাসওয়ার্ড দিলেই কনসোল খুলবে — পাসওয়ার্ড যাচাই হয় না। সুপার অ্যাডমিন ইমেইল দিয়ে লগইন করলে কনসোলে সুপার অ্যাডমিন চিপ দেখাবে।
+          {showSetup
+            ? <><b>প্রথমবার মাস্টার অ্যাডমিন সেটআপ:</b> সার্ভার পাসওয়ার্ড এখনো নির্ধারিত হয়নি। একবার পাসওয়ার্ড সেট করলে তা এনক্রিপ্টেড (scrypt) অবস্থায় সংরক্ষিত হবে এবং পরবর্তীতে একই আইডি ও পাসওয়ার্ড দিয়ে সব অ্যাক্সেস পাবেন।</>
+            : isMasterTab
+              ? <><b>পূর্ণ অ্যাক্সেস:</b> নির্ধারিত মাস্টার অ্যাডমিন আইডি ({authStatus.masterAdminEmail || MASTER_ADMIN_ID}) ও সঠিক পাসওয়ার্ড দিয়ে প্রবেশ করলে স্কুল ও অফিস ম্যানেজমেন্টের সব মডিউল, সেটিংস ও ব্যাকআপ অ্যাক্সেস পাবেন।</>
+              : <><b>সীমিত অ্যাক্সেস:</b> শিক্ষক/স্টাফ বা শিক্ষার্থী হিসেবে প্রবেশ করলে শুধু সংশ্লিষ্ট মডিউলগুলো দেখা যাবে। পূর্ণ অ্যাক্সেসের জন্য মাস্টার অ্যাডমিন হিসেবে লগইন করুন।</>}
         </div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-          <button type="submit" className="btn btn-brand" style={{ flex: 1 }}>লগইন করে কনসোল খুলুন</button>
+          <button type="submit" className="btn btn-brand" style={{ flex: 1 }} disabled={busy || authStatus.loading}>
+            {busy ? "যাচাই হচ্ছে..." : showSetup ? "পাসওয়ার্ড সেট করে প্রবেশ করুন" : "লগইন করে কনসোল খুলুন"}
+          </button>
           <button type="button" className="btn btn-ghost" onClick={close}>বন্ধ করুন</button>
         </div>
       </form>
@@ -489,11 +1300,21 @@ function LoginModal({ close, onLogin }) {
 }
 
 /* ---------- অনলাইন ভর্তির আবেদন ---------- */
-function AdmissionModal({ close, submit, showCost, costTypes }) {
-  const [f, setF] = useState({ name: "", cls: "ষষ্ঠ", guardian: "", phone: "", address: "" });
+function AdmissionModal({ close, submit, showCost, costTypes, classList, classes }) {
+  const opts = classList && classList.length ? classList : CLASS_NAMES;
+  const initCls = opts[0] || "প্লে";
+  const sectionsFor = clsName => {
+    const matched = (classes || []).find(c => c.name === clsName);
+    return matched ? normalizeClassSections(matched).map(s => s.name) : defaultSectionNamesForClass(clsName);
+  };
+  const [f, setF] = useState({ name: "", cls: initCls, section: sectionsFor(initCls)[0] || "", guardian: "", phone: "", address: "" });
   const set = k => e => setF({ ...f, [k]: e.target.value });
-  const [syncMsg, setSyncMsg] = useState("");
-  const doSync = () => { setSyncMsg("সিঙ্ক হয়নি — এখন অফলাইন / লোকাল মোডে আছে। ডেটা এই ব্রাউজারেই আছে; পরে আবার চেষ্টা করুন।"); };
+  const secOpts = sectionsFor(f.cls);
+  const onClassChange = e => {
+    const nextCls = e.target.value;
+    const nextSecs = sectionsFor(nextCls);
+    setF(prev => ({ ...prev, cls: nextCls, section: nextSecs.includes(prev.section) ? prev.section : (nextSecs[0] || "") }));
+  };
   return (
     <div className="modal-bg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
       <form className="modal" onSubmit={e => { e.preventDefault(); if (f.name.trim()) submit(f); }}>
@@ -509,10 +1330,12 @@ function AdmissionModal({ close, submit, showCost, costTypes }) {
         <div className="form-grid">
           <div className="full"><label>শিক্ষার্থীর নাম *</label><input value={f.name} onChange={set("name")} required /></div>
           <div><label>ভর্তিচ্ছু শ্রেণি</label>
-            <select value={f.cls} onChange={set("cls")}>{CLASS_NAMES.map(c => <option key={c}>{c}</option>)}</select></div>
+            <select value={f.cls} onChange={onClassChange}>{opts.map(c => <option key={c}>{c}</option>)}</select></div>
+          <div><label>{isGroupClass(f.cls) ? "বিভাগ / শাখা" : "শাখা"}</label>
+            <select value={f.section} onChange={set("section")}>{secOpts.length ? secOpts.map(s => <option key={s} value={s}>{s}</option>) : <option value="">— কোনো শাখা নেই —</option>}</select></div>
           <div><label>অভিভাবকের নাম</label><input value={f.guardian} onChange={set("guardian")} /></div>
           <div><label>মোবাইল নম্বর</label><input value={f.phone} onChange={set("phone")} /></div>
-          <div><label>ঠিকানা</label><input value={f.address} onChange={set("address")} /></div>
+          <div className="full"><label>ঠিকানা</label><input value={f.address} onChange={set("address")} /></div>
         </div>
         <div style={{ display: "flex", gap: 9, marginTop: 16, flexWrap: "wrap" }}>
           <button type="submit" className="btn btn-brand" style={{ flex: 1 }}>আবেদন জমা দিন</button>
@@ -569,18 +1392,63 @@ function ModalForm({ title, sub, close, onSubmit, children, submitLabel }) {
   );
 }
 
-function Console({ data, setData, user, logout, goLanding, toast }) {
-  const [mod, setMod] = useState("dashboard");
+function Console({ data, setData, user, logout, goLanding, toast, initialSecKey, clearInitialSecKey }) {
+  const isMaster = Boolean(user && (user.isMasterAdmin || user.isSuper));
+  const isStudent = Boolean(user && user.role === "student");
+  const allowedSet = useMemo(() => {
+    if (isMaster) return new Set(MODULES.map(m => m.id));
+    if (user && Array.isArray(user.allowedModules) && user.allowedModules.length > 0) {
+      return new Set(user.allowedModules);
+    }
+    return new Set(["dashboard"]);
+  }, [isMaster, user]);
+  const visibleModules = useMemo(() => MODULES.filter(m => allowedSet.has(m.id)), [allowedSet]);
+  const firstSchoolId = useMemo(() => {
+    const m = visibleModules.find(x => !x.office && x.id !== "settings");
+    return m ? m.id : null;
+  }, [visibleModules]);
+  const firstOfficeId = useMemo(() => {
+    const m = visibleModules.find(x => x.office);
+    return m ? m.id : null;
+  }, [visibleModules]);
+
+  const [mod, setMod] = useState(initialSecKey ? "classes" : "dashboard");
+  useEffect(() => {
+    if (!allowedSet.has(mod)) setMod("dashboard");
+  }, [allowedSet, mod]);
   const [search, setSearch] = useState("");
+  const [studentClassFilter, setStudentClassFilter] = useState("সব");
+  const [studentSectionFilter, setStudentSectionFilter] = useState("সব");
+  const [classBookFilter, setClassBookFilter] = useState("সব");
+  const [classBookSectionFilter, setClassBookSectionFilter] = useState("সব");
+  const [classBookTypeFilter, setClassBookTypeFilter] = useState("সব");
   const [editStudent, setEditStudent] = useState(null);
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [teacherForm, setTeacherForm] = useState(false);
   const [classForm, setClassForm] = useState(false);
+  const [editClass, setEditClass] = useState(null);
+  const [sectionModal, setSectionModal] = useState(null);
+  const [openSecKey, setOpenSecKey] = useState(initialSecKey || null);
+  const [secSubFilter, setSecSubFilter] = useState("সব");
+  const [secSubDraft, setSecSubDraft] = useState(null);
+  useEffect(() => {
+    if (initialSecKey) {
+      setMod("classes");
+      setOpenSecKey(initialSecKey);
+      setSecSubFilter("সব");
+      if (clearInitialSecKey) clearInitialSecKey();
+      setTimeout(() => {
+        const el = document.querySelector(`[data-sec-key="${initialSecKey}"]`);
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 60);
+    }
+  }, [initialSecKey, clearInitialSecKey]);
   const [subjectForm, setSubjectForm] = useState(false);
+  const [editSubject, setEditSubject] = useState(null);
   const [noticeForm, setNoticeForm] = useState(false);
   const [bookForm, setBookForm] = useState(false);
   const [routeForm, setRouteForm] = useState(false);
-  const [attClass, setAttClass] = useState("ষষ্ঠ");
+  const [attClass, setAttClass] = useState("প্লে");
   const [attDate, setAttDate] = useState(todayStr());
   const [attDraft, setAttDraft] = useState(null);
   const [resStudent, setResStudent] = useState("");
@@ -677,7 +1545,28 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
     setShowStudentForm(false); setEditStudent(null);
   };
   const delStudent = id => patch({ students: data.students.filter(x => x.id !== id), studentCosts: (data.studentCosts || []).filter(c => c.studentId !== id) });
-  const studentList = data.students.filter(x => !search || x.name.includes(search) || String(x.roll).includes(search));
+  const studentSectionOptions = useMemo(() => {
+    if (studentClassFilter === "সব") {
+      const fromData = data.students.map(x => x.section).filter(Boolean);
+      return Array.from(new Set([...SECTION_NAMES, ...GROUP_SECTION_NAMES, ...fromData]));
+    }
+    const matched = (data.classes || []).find(c => c.name === studentClassFilter);
+    const secs = matched ? normalizeClassSections(matched).map(s => s.name) : defaultSectionNamesForClass(studentClassFilter);
+    const fromData = data.students.filter(x => x.cls === studentClassFilter).map(x => x.section).filter(Boolean);
+    return Array.from(new Set([...secs, ...fromData]));
+  }, [data.classes, data.students, studentClassFilter]);
+  const studentList = data.students.filter(x => {
+    if (studentClassFilter !== "সব" && x.cls !== studentClassFilter) return false;
+    if (studentSectionFilter !== "সব" && x.section !== studentSectionFilter) return false;
+    if (!search) return true;
+    const q = search.trim();
+    return x.name.includes(q)
+      || String(x.roll).includes(q)
+      || (x.cls || "").includes(q)
+      || (x.section || "").includes(q)
+      || (x.guardian || "").includes(q)
+      || (x.phone || "").includes(q);
+  });
 
   /* ----- হাজিরা ----- */
   const attKey = attDate + "|" + attClass;
@@ -744,14 +1633,16 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
     <div className="console">
       <aside className="sidebar">
         <div className="s-school">{S.name}</div>
-        <div className="s-role">অ্যাডমিন কনসোল</div>
-        {user && user.isSuper && <span className="admin-chip">★ সুপার অ্যাডমিন</span>}
+        <div className="s-role">{isMaster ? "মাস্টার অ্যাডমিন কনসোল" : isStudent ? "শিক্ষার্থী পোর্টাল" : "শিক্ষক / স্টাফ কনসোল"}</div>
+        {isMaster
+          ? <span className="admin-chip">★ মাস্টার অ্যাডমিন (পূর্ণ অ্যাক্সেস)</span>
+          : <span className="admin-chip" style={{ background: "rgba(255,255,255,.16)", color: "#fff" }}>{isStudent ? "শিক্ষার্থী (সীমিত)" : "শিক্ষক / স্টাফ (সীমিত)"}</span>}
         {user && <div className="s-role" style={{ marginTop: 2 }}>{user.id}</div>}
         <nav className="side-nav">
-          {MODULES.map(m => (
+          {visibleModules.map(m => (
             <React.Fragment key={m.id}>
-              {m.id === "dashboard" && <div className="side-group">🏫 স্কুল ম্যানেজমেন্ট</div>}
-              {m.id === "employees" && <div className="side-group">🏢 অফিস ম্যানেজমেন্ট</div>}
+              {m.id === firstSchoolId && <div className="side-group">🏫 স্কুল ম্যানেজমেন্ট</div>}
+              {m.id === firstOfficeId && <div className="side-group">🏢 অফিস ম্যানেজমেন্ট</div>}
               <button className={mod === m.id ? "on" : ""} onClick={() => { setMod(m.id); setSearch(""); }}>
                 <span className="ic">{m.icon}</span>{m.label}
                 {m.id === "admissions" && pendingAdm.length > 0 && <span className="pill pill-warn" style={{ marginLeft: "auto" }}>{pendingAdm.length}</span>}
@@ -788,15 +1679,16 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
             <div className="card">
               <h3 style={{ marginTop: 0 }}>দ্রুত কাজ</h3>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn-brand btn-sm" onClick={() => { setMod("students"); setEditStudent(null); setShowStudentForm(true); }}>+ শিক্ষার্থী যোগ</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setMod("attendance")}>আজকের হাজিরা</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => { setMod("notices"); setNoticeForm(true); }}>+ নোটিশ</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setMod("results")}>ফলাফল দিন</button>
+                {!isStudent && allowedSet.has("students") && <button className="btn btn-brand btn-sm" onClick={() => { setMod("students"); setEditStudent(null); setShowStudentForm(true); }}>+ শিক্ষার্থী যোগ</button>}
+                {!isStudent && allowedSet.has("attendance") && <button className="btn btn-ghost btn-sm" onClick={() => setMod("attendance")}>আজকের হাজিরা</button>}
+                {!isStudent && allowedSet.has("notices") && <button className="btn btn-ghost btn-sm" onClick={() => { setMod("notices"); setNoticeForm(true); }}>+ নোটিশ</button>}
+                {allowedSet.has("results") && <button className="btn btn-ghost btn-sm" onClick={() => setMod("results")}>{isStudent ? "ফলাফল দেখুন" : "ফলাফল দিন"}</button>}
+                {allowedSet.has("routine") && <button className="btn btn-ghost btn-sm" onClick={() => setMod("routine")}>ক্লাস রুটিন</button>}
               </div>
-              {data.students.length === 0 && <div className="note-box">তথ্য এখনো খালি। সেটিংস থেকে এক ক্লিকে <b>নমুনা তথ্য</b> বসিয়ে সব মডিউল ঘুরে দেখতে পারেন, আবার মুছেও ফেলতে পারবেন।</div>}
+              {data.students.length === 0 && isMaster && <div className="note-box">তথ্য এখনো খালি। সেটিংস থেকে এক ক্লিকে <b>নমুনা তথ্য</b> বসিয়ে সব মডিউল ঘুরে দেখতে পারেন, আবার মুছেও ফেলতে পারবেন।</div>}
             </div>
           </div>
-          <div className="card" style={{ marginTop: 16 }}>
+          {isMaster && <div className="card" style={{ marginTop: 16 }}>
             <h3 style={{ marginTop: 0 }}>🏢 অফিস ম্যানেজমেন্ট — এক নজরে</h3>
             <p>অফিস কর্মী: {data.employees.length} জন · বিভাগ: {data.departments.length}টি · অপেক্ষমাণ ছুটি: {pendingLeaves.length}টি · চলমান কাজ: {data.tasks.filter(t => t.status !== "সম্পন্ন").length}টি</p>
             <p>নির্বাচিত মাসের ({payMonth}) মোট বেতন: {taka(monthPayTotal)} · মোট অফিস খরচ: {taka(officeExpTotal)} · অফিস নথি/নোটিশ: {data.officeDocs.length}টি</p>
@@ -809,7 +1701,7 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
               <button className="btn btn-ghost btn-sm" onClick={() => setMod("expenses")}>অফিস খরচ</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setMod("student-costs")}>শিক্ষার্থীর বার্ষিক খরচ</button>
             </div>
-          </div>
+          </div>}
           {data.notices.length > 0 && <div className="card" style={{ marginTop: 16 }}>
             <h3 style={{ marginTop: 0 }}>সাম্প্রতিক নোটিশ</h3>
             {data.notices.slice(0, 3).map(n => <div className="notice-item" key={n.id}><div className="notice-date">{new Date(n.date + "T00:00:00").getDate()}<small>{new Date(n.date + "T00:00:00").toLocaleDateString("bn-BD", { month: "short" })}</small></div><div><h3>{n.title}</h3><p>{n.body}</p></div></div>)}
@@ -817,24 +1709,34 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
         </div>}
 
         {mod === "students" && <div>
-          <h1>শিক্ষার্থী ব্যবস্থাপনা</h1><p className="lede">মোট {data.students.length} জন শিক্ষার্থী</p>
+          <h1>শিক্ষার্থী ব্যবস্থাপনা</h1><p className="lede">মোট {toBnNum(data.students.length)} জন শিক্ষার্থী · {studentClassFilter === "সব" && studentSectionFilter === "সব" && !search ? "সকল শ্রেণির শিক্ষার্থী" : `প্রদর্শিত ${toBnNum(studentList.length)} জন`}</p>
           <div className="toolbar">
-            <input type="search" placeholder="নাম বা রোল খুঁজুন…" value={search} onChange={e => setSearch(e.target.value)} />
+            <select style={{ maxWidth: 165 }} value={studentClassFilter} onChange={e => { setStudentClassFilter(e.target.value); setStudentSectionFilter("সব"); }}>
+              <option value="সব">সকল শ্রেণি</option>
+              {classOptionsOf(data).map(c => <option key={c} value={c}>{c} শ্রেণি</option>)}
+            </select>
+            <select style={{ maxWidth: 165 }} value={studentSectionFilter} onChange={e => setStudentSectionFilter(e.target.value)}>
+              <option value="সব">সকল শাখা</option>
+              {studentSectionOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input type="search" placeholder="নাম, রোল বা অভিভাবক খুঁজুন…" value={search} onChange={e => setSearch(e.target.value)} />
             <span className="sp"></span>
             <button className="btn btn-brand" onClick={() => { setEditStudent(null); setShowStudentForm(true); }}>+ নতুন শিক্ষার্থী</button>
           </div>
           {data.students.length === 0
             ? <div className="card empty"><b>কোনো শিক্ষার্থী নেই</b>“নতুন শিক্ষার্থী” বোতামে যোগ করুন, অথবা সেটিংস থেকে নমুনা তথ্য বসান।</div>
-            : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>রোল</th><th>শাখা</th><th>অভিভাবক</th><th>মোবাইল</th><th>বকেয়া</th><th>অ্যাকশন</th></tr></thead>
-              <tbody>{studentList.map(x => { const due = (+x.payable || 0) - (+x.paid || 0); return (
-                <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{x.roll}</td><td>{x.section}</td><td>{x.guardian}</td><td>{x.phone}</td>
-                <td>{due > 0 ? <span className="pill pill-warn">{taka(due)}</span> : <span className="pill pill-ok">পরিশোধিত</span>}</td>
-                <td><div className="row-actions">
-                  <button className="mini-btn" onClick={() => { setCostStudentId(x.id); setMod("student-costs"); }}>বার্ষিক খরচ</button>
-                  <button className="mini-btn" onClick={() => { setEditStudent(x); setShowStudentForm(true); }}>সম্পাদনা</button>
-                  <button className="mini-btn red" onClick={() => delStudent(x.id)}>মুছুন</button>
-                </div></td></tr>); })}
-              </tbody></table></div>}
+            : studentList.length === 0
+              ? <div className="card empty"><b>কোনো শিক্ষার্থী পাওয়া যায়নি</b>নির্বাচিত শ্রেণি, শাখা বা অনুসন্ধান পরিবর্তন করে দেখুন।</div>
+              : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>রোল</th><th>শাখা</th><th>অভিভাবক</th><th>মোবাইল</th><th>বকেয়া</th><th>অ্যাকশন</th></tr></thead>
+                <tbody>{studentList.map(x => { const due = (+x.payable || 0) - (+x.paid || 0); return (
+                  <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{toBnNum(x.roll)}</td><td>{x.section}</td><td>{x.guardian}</td><td>{x.phone}</td>
+                  <td>{due > 0 ? <span className="pill pill-warn">{taka(due)}</span> : <span className="pill pill-ok">পরিশোধিত</span>}</td>
+                  <td><div className="row-actions">
+                    <button className="mini-btn" onClick={() => { setCostStudentId(x.id); setMod("student-costs"); }}>বার্ষিক খরচ</button>
+                    <button className="mini-btn" onClick={() => { setEditStudent(x); setShowStudentForm(true); }}>সম্পাদনা</button>
+                    <button className="mini-btn red" onClick={() => delStudent(x.id)}>মুছুন</button>
+                  </div></td></tr>); })}
+                </tbody></table></div>}
         </div>}
 
         {mod === "teachers" && <div>
@@ -852,20 +1754,471 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
         </div>}
 
         {mod === "classes" && <div>
-          <h1>শ্রেণি ও বিষয়</h1><p className="lede">শ্রেণি {data.classes.length}টি · বিষয় {data.subjects.length}টি</p>
+          <h1>শ্রেণি, শাখা, বোর্ড বই ও এক্সট্রা অ্যাকটিভিটিস</h1><p className="lede">শ্রেণি {data.classes.length}টি (প্রতিটি শ্রেণির শাখা যোগ, সম্পাদনা ও মুছে ফেলা যাবে) · বোর্ড বই, বিষয় ও অ্যাকটিভিটিস {data.subjects.length}টি</p>
           <div className="toolbar"><span className="sp"></span>
-            <button className="btn btn-ghost" onClick={() => setSubjectForm(true)}>+ বিষয় যোগ</button>
-            <button className="btn btn-brand" onClick={() => setClassForm(true)}>+ শ্রেণি যোগ</button></div>
+            <button className="btn btn-ghost" onClick={() => { setEditSubject(null); setSubjectForm(true); }}>+ বিষয় / বই / অ্যাকটিভিটিস যোগ</button>
+            <button className="btn btn-brand" onClick={() => { setEditClass(null); setClassForm(true); }}>+ শ্রেণি যোগ</button></div>
           <div className="grid2">
-            <div className="card"><h3 style={{ marginTop: 0 }}>শ্রেণিসমূহ</h3>
+            <div className="card"><h3 style={{ marginTop: 0 }}>শ্রেণিসমূহ, শাখা, বোর্ড বই ও এক্সট্রা অ্যাকটিভিটিস</h3>
               {data.classes.length === 0 && <p style={{ color: "var(--muted)" }}>কোনো শ্রেণি নেই।</p>}
-              {data.classes.map(c => <div className="notice-item" key={c.id}><div><h3>{c.name} শ্রেণি</h3><p>শাখা: {c.sections || "—"} · কক্ষ: {c.room || "—"} · আসন: {c.capacity || "—"} · শিক্ষার্থী: {data.students.filter(x => x.cls === c.name).length} জন</p></div>
-                <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ classes: data.classes.filter(x => x.id !== c.id) })}>মুছুন</button></span></div>)}
+              {data.classes.map(c => {
+                const secs = normalizeClassSections(c);
+                const books = normalizeBoardBooks(c);
+                const activities = normalizeExtraActivities(c);
+                const isStream = isGroupClass(c.name) || secs.some(s => GROUP_SECTION_NAMES.includes(s.name));
+                const totalCap = secs.reduce((a, s) => a + (+s.capacity || 0), 0);
+                const stuCount = data.students.filter(x => x.cls === c.name).length;
+                const bookGroups = isStream ? ["আবশ্যিক", "সাইন্স", "ইকমার্স", "মানবিক"] : ["সাধারণ"];
+                const deleteSectionAt = idx => {
+                  const delSec = secs[idx];
+                  const nextSecs = secs.filter((_, i) => i !== idx);
+                  const nextCls = buildClassRecord(c.id, c.name, nextSecs, books, activities);
+                  const nextSubjects = delSec
+                    ? data.subjects.filter(sb => !(sb.classes === c.name && sb.section && sb.section !== "সব শাখা" && sb.section === delSec.name))
+                    : data.subjects;
+                  patch({
+                    classes: data.classes.map(x => x.id === c.id ? nextCls : x),
+                    subjects: nextSubjects
+                  });
+                  if (openSecKey && openSecKey.startsWith(c.id + "::")) {
+                    setOpenSecKey(null);
+                    setSecSubDraft(null);
+                  }
+                  toast("শাখা মুছে ফেলা হয়েছে");
+                };
+                const saveSectionSubjects = (secIdx, nextSubs, nextSubjectsList) => {
+                  const nextSecs = secs.map((s, i) => i === secIdx ? { ...s, subjects: nextSubs } : s);
+                  const nextCls = buildClassRecord(c.id, c.name, nextSecs, books, activities);
+                  const nextPatch = { classes: data.classes.map(x => x.id === c.id ? nextCls : x) };
+                  if (Array.isArray(nextSubjectsList)) nextPatch.subjects = nextSubjectsList;
+                  patch(nextPatch);
+                };
+                const subjectSuggestions = Array.from(new Set([
+                  ...data.subjects.filter(sb => sb.classes === c.name || sb.classes === "সব শ্রেণি").map(sb => sb.name),
+                  ...books.map(b => b.title),
+                  ...DEFAULT_EXTRA_ACTIVITIES
+                ].filter(Boolean)));
+                return (
+                  <div className="notice-item" key={c.id} style={{ alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                        <h3 style={{ margin: 0 }}>
+                          {c.name} শ্রেণি{" "}
+                          <span className="pill pill-info">
+                            {(isStream ? "বিভাগভিত্তিক " : "") + toBnNum(secs.length) + "টি শাখা"} · মোট আসন {totalCap} · শিক্ষার্থী {toBnNum(stuCount)} জন
+                          </span>
+                        </h3>
+                        <span style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                          <button className="mini-btn" onClick={() => setSectionModal({ clsId: c.id, idx: -1, initial: null })}>+ শাখা যোগ</button>
+                          <button className="mini-btn" onClick={() => { setEditClass(c); setClassForm(true); }}>সম্পাদনা</button>
+                          <button className="mini-btn red" onClick={() => patch({ classes: data.classes.filter(x => x.id !== c.id) })}>মুছুন</button>
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                        {secs.length === 0 && <div style={{ fontSize: "13px", color: "var(--muted)" }}>কোনো শাখা নেই — "+ শাখা যোগ" বাটনে ক্লিক করে শাখা যোগ করুন।</div>}
+                        {secs.map((sec, idx) => {
+                          const secKey = c.id + "::" + idx;
+                          const isExpanded = openSecKey === secKey;
+                          const secSubs = normalizeSectionSubjects(c, sec, data.subjects);
+                          const acadSubs = secSubs.filter(sub => sub.group !== "এক্সট্রা অ্যাকটিভিটিস");
+                          const actSubs = secSubs.filter(sub => sub.group === "এক্সট্রা অ্যাকটিভিটিস");
+                          const visibleSecSubs = secSubFilter === "পাঠ্যবিষয়"
+                            ? acadSubs
+                            : secSubFilter === "এক্সট্রা অ্যাকটিভিটিস"
+                              ? actSubs
+                              : secSubs;
+                          const defaultSecGrp = isStream && inferStreamForSection(sec.name) ? inferStreamForSection(sec.name) : (isStream ? "আবশ্যিক" : "সাধারণ");
+                          const toggleExpand = () => {
+                            setOpenSecKey(prev => prev === secKey ? null : secKey);
+                            setSecSubFilter("সব");
+                            if (secSubDraft && secSubDraft.key !== secKey) setSecSubDraft(null);
+                          };
+                          const startAddSub = e => {
+                            if (e) e.stopPropagation();
+                            setOpenSecKey(secKey);
+                            setSecSubFilter("সব");
+                            setSecSubDraft({ key: secKey, mode: "add", subIdx: -1, name: "", code: "", group: defaultSecGrp });
+                          };
+                          return (
+                            <div key={idx} data-sec-key={secKey} style={{
+                              borderRadius: 7, background: "var(--surface2)",
+                              border: isExpanded ? "2px solid var(--brand)" : "1px solid var(--line)"
+                            }}>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={toggleExpand}
+                                onKeyDown={e => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    toggleExpand();
+                                  }
+                                }}
+                                style={{
+                                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap",
+                                  padding: "7px 9px", cursor: "pointer",
+                                  fontSize: "13.5px", color: isStream ? "var(--brand-dark)" : "var(--ink2)"
+                                }}
+                                title="এই শাখার সকল বিষয় দেখতে, যোগ করতে, এডিট ও ডিলিট করতে ক্লিক করুন"
+                              >
+                                <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                  <b>{isExpanded ? "▾ " : "▸ "}{isStream ? "বিভাগ: " : "শাখা "}{sec.name}</b>
+                                  <span>— রুম নং: {sec.room} · আসন সংখ্যা: {sec.capacity}</span>
+                                  <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); toggleExpand(); }}
+                                    style={{
+                                      fontSize: "12px", fontWeight: 700, padding: "2px 8px", borderRadius: 5,
+                                      border: "1px solid var(--brand)",
+                                      background: isExpanded ? "var(--brand)" : "var(--brand-soft)",
+                                      color: isExpanded ? "#fff" : "var(--brand-dark)"
+                                    }}
+                                  >
+                                    {isExpanded ? "▾ " : "▸ "}যুক্ত বিষয় ({toBnNum(secSubs.length)})
+                                  </button>
+                                </span>
+                                <span style={{ display: "flex", gap: 4 }} onClick={e => e.stopPropagation()}>
+                                  <button type="button" className="mini-btn" onClick={() => setSectionModal({ clsId: c.id, idx, initial: sec })}>সম্পাদনা</button>
+                                  <button type="button" className="mini-btn red" onClick={() => deleteSectionAt(idx)}>মুছুন</button>
+                                </span>
+                              </div>
+                              {isExpanded && (
+                                <div style={{
+                                  padding: "10px", borderTop: "1px dashed var(--line)",
+                                  background: "var(--surface)", borderRadius: "0 0 7px 7px", display: "grid", gap: 8
+                                }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: "13.5px", fontWeight: 700, color: "var(--ink)" }}>
+                                      {sec.name} শাখার অন্তর্ভুক্ত সকল বিষয় ({toBnNum(secSubs.length)}টি)
+                                    </span>
+                                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                      {Array.isArray(sec.subjects) && (
+                                        <button
+                                          type="button"
+                                          className="mini-btn"
+                                          onClick={() => {
+                                            const resetList = defaultSectionSubjectsFor(c, sec, data.subjects);
+                                            saveSectionSubjects(idx, resetList);
+                                            toast("শ্রেণির বোর্ড বই ও এক্সট্রা অ্যাকটিভিটিস লোড হয়েছে");
+                                          }}
+                                        >ডিফল্ট রিসেট</button>
+                                      )}
+                                      <button type="button" className="mini-btn" style={{ background: "var(--brand)", color: "#fff" }} onClick={startAddSub}>+ বিষয় যোগ</button>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                    {[
+                                      { id: "সব", label: "সব (" + toBnNum(secSubs.length) + ")" },
+                                      { id: "পাঠ্যবিষয়", label: "বোর্ড বই ও বিষয় (" + toBnNum(acadSubs.length) + ")" },
+                                      { id: "এক্সট্রা অ্যাকটিভিটিস", label: "এক্সট্রা অ্যাকটিভিটিস (" + toBnNum(actSubs.length) + ")" }
+                                    ].map(tab => (
+                                      <button
+                                        key={tab.id}
+                                        type="button"
+                                        className="mini-btn"
+                                        onClick={() => setSecSubFilter(tab.id)}
+                                        style={secSubFilter === tab.id ? { background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" } : undefined}
+                                      >{tab.label}</button>
+                                    ))}
+                                  </div>
+                                  {secSubDraft && secSubDraft.key === secKey && secSubDraft.mode === "add" && (
+                                    <form
+                                      onSubmit={e => {
+                                        e.preventDefault();
+                                        const nm = secSubDraft.name.trim();
+                                        if (!nm) return;
+                                        const newId = uid();
+                                        const cd = secSubDraft.code.trim();
+                                        const grp = secSubDraft.group || "সাধারণ";
+                                        const nextSubs = [...secSubs, {
+                                          id: newId,
+                                          name: nm,
+                                          code: cd,
+                                          group: grp,
+                                          sectionOnly: true
+                                        }];
+                                        const nextSubjectsList = [...data.subjects, {
+                                          id: newId,
+                                          name: nm,
+                                          code: cd,
+                                          classes: c.name,
+                                          section: sec.name,
+                                          group: grp
+                                        }];
+                                        saveSectionSubjects(idx, nextSubs, nextSubjectsList);
+                                        setSecSubDraft(null);
+                                        toast(sec.name + " শাখায় নতুন বিষয় যোগ হয়েছে");
+                                      }}
+                                      style={{
+                                        display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center",
+                                        padding: 8, borderRadius: 6, background: "var(--brand-soft)", border: "1px solid var(--brand)"
+                                      }}
+                                    >
+                                      <input
+                                        list={"sec-sub-dl-" + c.id}
+                                        value={secSubDraft.name}
+                                        onChange={e => setSecSubDraft(prev => ({ ...prev, name: e.target.value }))}
+                                        placeholder="বিষয়ের নাম লিখুন *"
+                                        style={{ flex: "2 1 150px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                        autoFocus
+                                        required
+                                      />
+                                      <datalist id={"sec-sub-dl-" + c.id}>
+                                        {subjectSuggestions.map(nm => <option key={nm} value={nm} />)}
+                                      </datalist>
+                                      <input
+                                        value={secSubDraft.code}
+                                        onChange={e => setSecSubDraft(prev => ({ ...prev, code: e.target.value }))}
+                                        placeholder="কোড"
+                                        style={{ flex: "1 1 70px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                      />
+                                      <select
+                                        value={secSubDraft.group}
+                                        onChange={e => setSecSubDraft(prev => ({ ...prev, group: e.target.value }))}
+                                        style={{ flex: "1 1 110px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                      >
+                                        <option value="সাধারণ">সাধারণ</option>
+                                        <option value="আবশ্যিক">আবশ্যিক</option>
+                                        <option value="সাইন্স">সাইন্স</option>
+                                        <option value="ইকমার্স">ইকমার্স</option>
+                                        <option value="মানবিক">মানবিক</option>
+                                        <option value="ঐচ্ছিক">ঐচ্ছিক</option>
+                                        <option value="এক্সট্রা অ্যাকটিভিটিস">এক্সট্রা অ্যাকটিভিটিস</option>
+                                      </select>
+                                      <button type="submit" className="mini-btn" style={{ background: "var(--brand)", color: "#fff" }}>যোগ</button>
+                                      <button type="button" className="mini-btn" onClick={() => setSecSubDraft(null)}>বাতিল</button>
+                                    </form>
+                                  )}
+                                  {visibleSecSubs.length === 0 && (
+                                    <div style={{ fontSize: "12.5px", color: "var(--muted)" }}>
+                                      এই তালিকায় কোনো বিষয় নেই — "+ বিষয় যোগ" বাটনে ক্লিক করে বিষয় যোগ করুন।
+                                    </div>
+                                  )}
+                                  <div style={{ display: "grid", gap: 4 }}>
+                                    {visibleSecSubs.map((sub, vIdx) => {
+                                      const subIdx = secSubs.findIndex(item => item === sub);
+                                      const isEditingSub = secSubDraft && secSubDraft.key === secKey && secSubDraft.mode === "edit" && secSubDraft.subIdx === subIdx;
+                                      if (isEditingSub) {
+                                        return (
+                                          <form
+                                            key={sub.id || vIdx}
+                                            onSubmit={e => {
+                                              e.preventDefault();
+                                              const nm = secSubDraft.name.trim();
+                                              if (!nm) return;
+                                              const cd = secSubDraft.code.trim();
+                                              const grp = secSubDraft.group || "সাধারণ";
+                                              const nextSubs = secSubs.map((item, i) => i === subIdx ? {
+                                                ...item,
+                                                name: nm,
+                                                code: cd,
+                                                group: grp
+                                              } : item);
+                                              const hasSecSpecific = data.subjects.some(sb => sb.id === sub.id && sb.classes === c.name && sb.section === sec.name);
+                                              const nextSubjectsList = hasSecSpecific
+                                                ? data.subjects.map(sb => (sb.id === sub.id && sb.classes === c.name && sb.section === sec.name)
+                                                    ? { ...sb, name: nm, code: cd, group: grp }
+                                                    : sb)
+                                                : null;
+                                              saveSectionSubjects(idx, nextSubs, nextSubjectsList);
+                                              setSecSubDraft(null);
+                                              toast("শাখার বিষয় আপডেট হয়েছে");
+                                            }}
+                                            style={{
+                                              display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center",
+                                              padding: 7, borderRadius: 6, background: "var(--surface2)", border: "1px solid var(--brand)"
+                                            }}
+                                          >
+                                            <input
+                                              list={"sec-sub-dl-" + c.id}
+                                              value={secSubDraft.name}
+                                              onChange={e => setSecSubDraft(prev => ({ ...prev, name: e.target.value }))}
+                                              placeholder="বিষয়ের নাম *"
+                                              style={{ flex: "2 1 150px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                              autoFocus
+                                              required
+                                            />
+                                            <input
+                                              value={secSubDraft.code}
+                                              onChange={e => setSecSubDraft(prev => ({ ...prev, code: e.target.value }))}
+                                              placeholder="কোড"
+                                              style={{ flex: "1 1 70px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                            />
+                                            <select
+                                              value={secSubDraft.group}
+                                              onChange={e => setSecSubDraft(prev => ({ ...prev, group: e.target.value }))}
+                                              style={{ flex: "1 1 110px", minHeight: 36, padding: "5px 8px", fontSize: "13.5px" }}
+                                            >
+                                              <option value="সাধারণ">সাধারণ</option>
+                                              <option value="আবশ্যিক">আবশ্যিক</option>
+                                              <option value="সাইন্স">সাইন্স</option>
+                                              <option value="ইকমার্স">ইকমার্স</option>
+                                              <option value="মানবিক">মানবিক</option>
+                                              <option value="ঐচ্ছিক">ঐচ্ছিক</option>
+                                              <option value="এক্সট্রা অ্যাকটিভিটিস">এক্সট্রা অ্যাকটিভিটিস</option>
+                                            </select>
+                                            <button type="submit" className="mini-btn" style={{ background: "var(--brand)", color: "#fff" }}>সংরক্ষণ</button>
+                                            <button type="button" className="mini-btn" onClick={() => setSecSubDraft(null)}>বাতিল</button>
+                                          </form>
+                                        );
+                                      }
+                                      return (
+                                        <div
+                                          key={sub.id || vIdx}
+                                          style={{
+                                            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap",
+                                            padding: "5px 8px", borderRadius: 6,
+                                            background: sub.group === "এক্সট্রা অ্যাকটিভিটিস" ? "var(--accent-soft)" : "var(--surface2)",
+                                            fontSize: "13px"
+                                          }}
+                                        >
+                                          <span>
+                                            <b>{sub.name}</b>
+                                            {sub.code ? <span style={{ color: "var(--muted)" }}> · কোড: {sub.code}</span> : null}
+                                            {sub.group ? <span style={{ color: sub.group === "এক্সট্রা অ্যাকটিভিটিস" ? "var(--accent)" : "var(--brand)", fontWeight: 600 }}> · {sub.group}</span> : null}
+                                            {sub.sectionOnly ? <span style={{ fontSize: "11px", marginLeft: 5, padding: "1px 5px", borderRadius: 4, background: "var(--brand-soft)", color: "var(--brand-dark)", fontWeight: 600 }}>শাখা: {sec.name}</span> : null}
+                                          </span>
+                                          <span style={{ display: "flex", gap: 4 }}>
+                                            <button
+                                              type="button"
+                                              className="mini-btn"
+                                              onClick={() => setSecSubDraft({
+                                                key: secKey, mode: "edit", subIdx,
+                                                name: sub.name, code: sub.code || "", group: sub.group || "সাধারণ"
+                                              })}
+                                            >সম্পাদনা</button>
+                                            <button
+                                              type="button"
+                                              className="mini-btn red"
+                                              onClick={() => {
+                                                const nextSubs = secSubs.filter((_, i) => i !== subIdx);
+                                                const hasSecSpecific = data.subjects.some(sb => sb.id === sub.id && sb.classes === c.name && sb.section === sec.name);
+                                                const nextSubjectsList = hasSecSpecific
+                                                  ? data.subjects.filter(sb => !(sb.id === sub.id && sb.classes === c.name && sb.section === sec.name))
+                                                  : null;
+                                                saveSectionSubjects(idx, nextSubs, nextSubjectsList);
+                                                if (secSubDraft && secSubDraft.key === secKey) setSecSubDraft(null);
+                                                toast("শাখা থেকে বিষয় মুছে ফেলা হয়েছে");
+                                              }}
+                                            >মুছুন</button>
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {books.length > 0 && (
+                        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px dashed var(--line)" }}>
+                          <div style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--ink)" }}>বোর্ড বই ({toBnNum(books.length)}টি):</div>
+                          {bookGroups.map(grp => {
+                            const grpBooks = books.filter(b => b.group === grp);
+                            if (grpBooks.length === 0) return null;
+                            return (
+                              <div key={grp} style={{ fontSize: "12.5px", color: "var(--ink2)", marginTop: 2 }}>
+                                {isStream && <b style={{ color: "var(--brand)" }}>{grp}: </b>}
+                                <span>{grpBooks.map(b => b.title).join(", ")}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {activities.length > 0 && (
+                        <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed var(--line)" }}>
+                          <div style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--accent)" }}>এক্সট্রা অ্যাকটিভিটিস ({toBnNum(activities.length)}টি):</div>
+                          <div style={{ fontSize: "12.5px", color: "var(--ink2)", marginTop: 2 }}>{activities.join(", ")}</div>
+                        </div>
+                      )}
+                      <p style={{ marginTop: 5, fontSize: "13px", color: "var(--muted)" }}>বর্তমান শিক্ষার্থী: {stuCount} জন</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="card"><h3 style={{ marginTop: 0 }}>বিষয়সমূহ</h3>
-              {data.subjects.length === 0 && <p style={{ color: "var(--muted)" }}>কোনো বিষয় নেই।</p>}
-              {data.subjects.map(sb => <div className="notice-item" key={sb.id}><div><h3>{sb.name}</h3><p>কোড: {sb.code || "—"} · শ্রেণি: {sb.classes || "সব"}</p></div>
-                <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ subjects: data.subjects.filter(x => x.id !== sb.id) })}>মুছুন</button></span></div>)}
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                <h3 style={{ margin: 0 }}>বোর্ড বই, বিষয় ও এক্সট্রা অ্যাকটিভিটিস</h3>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <select style={{ maxWidth: 155 }} value={classBookTypeFilter} onChange={e => setClassBookTypeFilter(e.target.value)}>
+                    <option value="সব">সব ধরন</option>
+                    <option value="বোর্ড বই">বোর্ড বই ও বিষয়</option>
+                    <option value="এক্সট্রা অ্যাকটিভিটিস">এক্সট্রা অ্যাকটিভিটিস</option>
+                  </select>
+                  <select style={{ maxWidth: 135 }} value={classBookFilter} onChange={e => { setClassBookFilter(e.target.value); setClassBookSectionFilter("সব"); }}>
+                    <option value="সব">সকল শ্রেণি</option>
+                    {classOptionsOf(data).map(cn => <option key={cn} value={cn}>{cn}</option>)}
+                  </select>
+                  <select style={{ maxWidth: 130 }} value={classBookSectionFilter} onChange={e => setClassBookSectionFilter(e.target.value)}>
+                    <option value="সব">সকল শাখা</option>
+                    {Array.from(new Set([
+                      ...((classBookFilter !== "সব"
+                        ? (data.classes.find(c => c.name === classBookFilter) ? normalizeClassSections(data.classes.find(c => c.name === classBookFilter)).map(s => s.name) : defaultSectionNamesForClass(classBookFilter))
+                        : data.classes.flatMap(c => normalizeClassSections(c).map(s => s.name)))),
+                      ...data.subjects.map(sb => sb.section).filter(s => s && s !== "সব শাখা")
+                    ])).map(sn => <option key={sn} value={sn}>{sn}</option>)}
+                  </select>
+                  <button className="mini-btn" onClick={() => { setEditSubject(null); setSubjectForm(true); }}>+ যোগ</button>
+                </div>
+              </div>
+              {(() => {
+                const list = data.subjects.filter(sb => {
+                  const matchCls = classBookFilter === "সব" || sb.classes === classBookFilter || sb.classes === "সব শ্রেণি";
+                  const sbSec = sb.section || "সব শাখা";
+                  const matchSec = classBookSectionFilter === "সব" || sbSec === classBookSectionFilter || sbSec === "সব শাখা";
+                  const isAct = sb.group === "এক্সট্রা অ্যাকটিভিটিস";
+                  const matchType = classBookTypeFilter === "সব"
+                    || (classBookTypeFilter === "এক্সট্রা অ্যাকটিভিটিস" && isAct)
+                    || (classBookTypeFilter === "বোর্ড বই" && !isAct);
+                  return matchCls && matchSec && matchType;
+                });
+                if (list.length === 0) return <p style={{ color: "var(--muted)" }}>কোনো বিষয়, বোর্ড বই বা অ্যাকটিভিটিস নেই।</p>;
+                return list.map(sb => (
+                  <div className="notice-item" key={sb.id}>
+                    <div>
+                      <h3>{sb.name}</h3>
+                      <p>
+                        কোড: {sb.code || "—"} · শ্রেণি: {sb.classes || "সব"}
+                        {" · শাখা: " + (sb.section && sb.section !== "সব শাখা" ? sb.section : "সব শাখা")}
+                        {sb.group && sb.group !== "সাধারণ" ? " · ধরন/বিভাগ: " + sb.group : ""}
+                      </p>
+                    </div>
+                    <span style={{ marginLeft: "auto", display: "flex", gap: 5 }}>
+                      <button className="mini-btn" onClick={() => { setEditSubject(sb); setSubjectForm(true); }}>সম্পাদনা</button>
+                      <button
+                        className="mini-btn red"
+                        onClick={() => {
+                          const nextSubjects = data.subjects.filter(x => x.id !== sb.id);
+                          const sbSec = String(sb.section || "সব শাখা").trim();
+                          const nextClasses = data.classes.map(c => {
+                            if (sb.classes !== "সব শ্রেণি" && sb.classes !== c.name) return c;
+                            let books = normalizeBoardBooks(c);
+                            let acts = normalizeExtraActivities(c);
+                            if (!sb.section || sbSec === "সব শাখা") {
+                              books = books.filter(b => !(b.title === sb.name && (b.group || "সাধারণ") === (sb.group || "সাধারণ")));
+                              if (sb.group === "এক্সট্রা অ্যাকটিভিটিস") acts = acts.filter(a => a !== sb.name);
+                            }
+                            const nextSecs = normalizeClassSections(c).map(sec => {
+                              if (!Array.isArray(sec.subjects)) return sec;
+                              if (sbSec !== "সব শাখা" && sec.name !== sbSec) return sec;
+                              return {
+                                ...sec,
+                                subjects: sec.subjects.filter(item => !(item.id === sb.id || (item.name === sb.name && item.group === (sb.group || item.group))))
+                              };
+                            });
+                            return buildClassRecord(c.id, c.name, nextSecs, books, acts);
+                          });
+                          patch({ subjects: nextSubjects, classes: nextClasses });
+                          toast("বিষয় মুছে ফেলা হয়েছে");
+                        }}
+                      >মুছুন</button>
+                    </span>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         </div>}
@@ -873,16 +2226,16 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
         {mod === "attendance" && <div>
           <h1>দৈনিক হাজিরা</h1><p className="lede">শ্রেণি ও তারিখ বেছে শিক্ষার্থীদের উপস্থিত/অনুপস্থিত চিহ্নিত করুন</p>
           <div className="toolbar">
-            <select style={{ maxWidth: 170 }} value={attClass} onChange={e => setAttClass(e.target.value)}>{CLASS_NAMES.map(c => <option key={c}>{c}</option>)}</select>
+            <select style={{ maxWidth: 170 }} value={attClass} onChange={e => setAttClass(e.target.value)}>{classOptionsOf(data).map(c => <option key={c}>{c}</option>)}</select>
             <input type="date" style={{ maxWidth: 200 }} value={attDate} onChange={e => setAttDate(e.target.value)} />
             <span className="sp"></span>
             <button className="btn btn-brand" onClick={saveAtt} disabled={attStudents.length === 0}>হাজিরা সংরক্ষণ করুন</button>
           </div>
           {attStudents.length === 0
             ? <div className="card empty"><b>এই শ্রেণিতে শিক্ষার্থী নেই</b>আগে শিক্ষার্থী মডিউল থেকে এই শ্রেণির শিক্ষার্থী যোগ করুন।</div>
-            : <div className="table-wrap"><table><thead><tr><th>রোল</th><th>নাম</th><th>অবস্থা</th></tr></thead><tbody>
+            : <div className="table-wrap"><table><thead><tr><th>রোল</th><th>নাম</th><th>শাখা</th><th>অবস্থা</th></tr></thead><tbody>
               {attStudents.slice().sort((a, b) => a.roll - b.roll).map(x => { const v = attMap[x.id] || "P"; return (
-                <tr key={x.id}><td>{x.roll}</td><td><b>{x.name}</b></td>
+                <tr key={x.id}><td>{toBnNum(x.roll)}</td><td><b>{x.name}</b></td><td>{x.section}</td>
                 <td><button className={"att-toggle " + (v === "P" ? "p" : "a")} onClick={() => toggleAtt(x.id)}>{v === "P" ? "✓ উপস্থিত" : "✗ অনুপস্থিত"}</button></td></tr>); })}
               </tbody></table></div>}
           <div className="card" style={{ marginTop: 16 }}><h3 style={{ marginTop: 0 }}>হাজিরার ইতিহাস</h3>
@@ -894,8 +2247,8 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 
         {mod === "results" && <div>
           <h1>পরীক্ষা ও ফলাফল</h1><p className="lede">বিষয়ভিত্তিক নম্বর দিলে বাংলাদেশি পদ্ধতিতে GPA/গ্রেড অটো হিসাব হবে</p>
-          <div className="grid2">
-            <div className="card">
+          <div className={isStudent ? "" : "grid2"}>
+            {!isStudent && <div className="card">
               <h3 style={{ marginTop: 0 }}>নম্বর এন্ট্রি</h3>
               <label>শিক্ষার্থী নির্বাচন করুন</label>
               <select value={resStudent} onChange={e => openMarks(e.target.value)}>
@@ -911,7 +2264,7 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
                 <button className="btn btn-brand btn-block" onClick={saveMarks}>নম্বর সংরক্ষণ করুন</button>
               </div>}
               {!resStudent && <p style={{ color: "var(--muted)" }}>শিক্ষার্থী বাছলে নম্বর দেওয়ার ঘর আসবে।</p>}
-            </div>
+            </div>}
             <div className="card">
               <h3 style={{ marginTop: 0 }}>ফলাফল তালিকা</h3>
               {data.students.filter(x => resOf(x.id)).length === 0 && <p style={{ color: "var(--muted)" }}>এখনো কারো ফলাফল দেওয়া হয়নি।</p>}
@@ -925,12 +2278,12 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 
         {mod === "fees" && <div>
           <h1>ফি ও বকেয়া</h1><p className="lede">আদায় {taka(collected)} · মোট বকেয়া {taka(dues)}</p>
-          <div className="note-box">প্রতিটি শিক্ষার্থীর মোট ফি তার <b>বার্ষিক খরচের তালিকা</b> থেকে আসে — ভর্তি ফি, ইউনিফর্ম, টিউশন, স্টেশনারি, পরীক্ষা, ক্রীড়া, উৎসব, পরিবহন, লাইব্রেরি, ল্যাব, উন্নয়ন ও কাস্টম খরচ। খাতভিত্তিক বিস্তারিত ও জমা নিতে অফিস ম্যানেজমেন্টের হিসাব তালিকা ব্যবহার করুন। <button className="mini-btn" onClick={() => setMod("student-costs")}>বার্ষিক খরচের হিসাব খুলুন</button></div>
+          <div className="note-box">প্রতিটি শিক্ষার্থীর মোট ফি তার <b>বার্ষিক খরচের তালিকা</b> থেকে আসে — ভর্তি ফি, ইউনিফর্ম, টিউশন, স্টেশনারি, পরীক্ষা, ক্রীড়া, উৎসব, পরিবহন, লাইব্রেরি, ল্যাব, উন্নয়ন ও কাস্টম খরচ। খাতভিত্তিক বিস্তারিত ও জমা নিতে অফিস ম্যানেজমেন্টের হিসাব তালিকা ব্যবহার করুন। {isMaster && <button className="mini-btn" onClick={() => setMod("student-costs")}>বার্ষিক খরচের হিসাব খুলুন</button>}</div>
           {data.students.length === 0
             ? <div className="card empty"><b>শিক্ষার্থী নেই</b>শিক্ষার্থী যোগ হলে এখানে ফি-র হিসাব দেখা যাবে।</div>
-            : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>মোট ফি</th><th>জমা</th><th>বকেয়া</th><th>অ্যাকশন</th></tr></thead><tbody>
+            : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>শাখা</th><th>মোট ফি</th><th>জমা</th><th>বকেয়া</th><th>অ্যাকশন</th></tr></thead><tbody>
               {data.students.map(x => { const due = (+x.payable || 0) - (+x.paid || 0); return (
-                <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{taka(x.payable)}</td><td>{taka(x.paid)}</td>
+                <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{x.section}</td><td>{taka(x.payable)}</td><td>{taka(x.paid)}</td>
                 <td>{due > 0 ? <span className="pill pill-warn">{taka(due)}</span> : <span className="pill pill-ok">পরিশোধিত</span>}</td>
                 <td><button className="mini-btn" onClick={() => { setPayFor(x); setPayAmt(""); }}>ফি জমা নিন</button></td></tr>); })}
               </tbody></table></div>}
@@ -938,13 +2291,13 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 
         {mod === "notices" && <div>
           <h1>নোটিশ বোর্ড</h1><p className="lede">নোটিশ {data.notices.length}টি · ল্যান্ডিং পেজেও দেখা যায়</p>
-          <div className="toolbar"><span className="sp"></span><button className="btn btn-brand" onClick={() => setNoticeForm(true)}>+ নতুন নোটিশ</button></div>
+          {!isStudent && <div className="toolbar"><span className="sp"></span><button className="btn btn-brand" onClick={() => setNoticeForm(true)}>+ নতুন নোটিশ</button></div>}
           <div className="card">
             {data.notices.length === 0 && <div className="empty"><b>কোনো নোটিশ নেই</b></div>}
             {data.notices.map(n => <div className="notice-item" key={n.id}>
               <div className="notice-date">{new Date(n.date + "T00:00:00").getDate()}<small>{new Date(n.date + "T00:00:00").toLocaleDateString("bn-BD", { month: "short" })}</small></div>
               <div><h3>{n.title}</h3><p>{n.body}</p></div>
-              <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ notices: data.notices.filter(x => x.id !== n.id) })}>মুছুন</button></span></div>)}
+              {!isStudent && <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ notices: data.notices.filter(x => x.id !== n.id) })}>মুছুন</button></span>}</div>)}
           </div>
         </div>}
 
@@ -962,34 +2315,34 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 
         {mod === "library" && <div>
           <h1>লাইব্রেরি</h1><p className="lede">বই {data.books.length} শিরোনাম · ধার দেওয়া আছে {issuedLoans.length}টি</p>
-          <div className="toolbar"><span className="sp"></span>
+          {!isStudent && <div className="toolbar"><span className="sp"></span>
             <button className="btn btn-ghost" onClick={() => setLoanForm(true)}>বই ধার দিন</button>
-            <button className="btn btn-brand" onClick={() => setBookForm(true)}>+ নতুন বই</button></div>
+            <button className="btn btn-brand" onClick={() => setBookForm(true)}>+ নতুন বই</button></div>}
           <div className="grid2">
             <div className="card"><h3 style={{ marginTop: 0 }}>বইয়ের তালিকা</h3>
               {data.books.length === 0 && <p style={{ color: "var(--muted)" }}>কোনো বই নেই।</p>}
               {data.books.map(b => { const out = data.loans.filter(l => l.bookId === b.id && !l.returned).length; return (
                 <div className="notice-item" key={b.id}><div><h3>{b.title}</h3><p>লেখক: {b.author} · কপি: {b.copies} · ধারে: {out}টি</p></div>
-                <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ books: data.books.filter(x => x.id !== b.id) })}>মুছুন</button></span></div>); })}
+                {!isStudent && <span style={{ marginLeft: "auto" }}><button className="mini-btn red" onClick={() => patch({ books: data.books.filter(x => x.id !== b.id) })}>মুছুন</button></span>}</div>); })}
             </div>
             <div className="card"><h3 style={{ marginTop: 0 }}>ধার দেওয়া বই</h3>
               {issuedLoans.length === 0 && <p style={{ color: "var(--muted)" }}>এখন কোনো বই ধারে নেই।</p>}
               {issuedLoans.map(l => { const b = data.books.find(x => x.id === l.bookId); const st = data.students.find(x => x.id === l.studentId); return (
                 <div className="notice-item" key={l.id}><div><h3>{b ? b.title : "বই"}</h3><p>শিক্ষার্থী: {st ? st.name : "—"} · তারিখ: {bnDate(l.date)}</p></div>
-                <span style={{ marginLeft: "auto" }}><button className="mini-btn" onClick={() => patch({ loans: data.loans.map(x => x.id === l.id ? { ...x, returned: true } : x) })}>ফেরত নিন</button></span></div>); })}
+                {!isStudent && <span style={{ marginLeft: "auto" }}><button className="mini-btn" onClick={() => patch({ loans: data.loans.map(x => x.id === l.id ? { ...x, returned: true } : x) })}>ফেরত নিন</button></span>}</div>); })}
             </div>
           </div>
         </div>}
 
         {mod === "transport" && <div>
           <h1>পরিবহন</h1><p className="lede">রুট {data.routes.length}টি</p>
-          <div className="toolbar"><span className="sp"></span><button className="btn btn-brand" onClick={() => setRouteForm(true)}>+ নতুন রুট</button></div>
+          {!isStudent && <div className="toolbar"><span className="sp"></span><button className="btn btn-brand" onClick={() => setRouteForm(true)}>+ নতুন রুট</button></div>}
           {data.routes.length === 0
             ? <div className="card empty"><b>কোনো রুট নেই</b>“নতুন রুট” বোতামে যোগ করুন।</div>
             : <div className="grid3">{data.routes.map(r => (
               <div className="card" key={r.id}><h3 style={{ margin: "0 0 4px" }}>🚌 {r.name}</h3>
                 <p style={{ margin: 0, color: "var(--ink2)", fontSize: "14.5px" }}>যান: {r.vehicle}<br />চালক: {r.driver}<br />স্টপেজ: {r.stops}</p>
-                <button className="mini-btn red" style={{ marginTop: 10 }} onClick={() => patch({ routes: data.routes.filter(x => x.id !== r.id) })}>মুছুন</button></div>))}
+                {!isStudent && <button className="mini-btn red" style={{ marginTop: 10 }} onClick={() => patch({ routes: data.routes.filter(x => x.id !== r.id) })}>মুছুন</button>}</div>))}
               </div>}
         </div>}
 
@@ -998,15 +2351,18 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
           {showCostAtAdmission && <div className="note-box">ভর্তির সময় মোট বার্ষিক খরচ দেখানো <b>চালু</b> আছে — অনুমোদন দিলে শিক্ষার্থীর হিসাবে মোট <b>{taka(yearlyPerStudent)}</b> বার্ষিক খরচের তালিকা তৈরি হবে, যা অফিসের হিসাব তালিকায় দেখা যাবে। এই প্রদর্শন সেটিংস থেকে বন্ধ/চালু করা যায়।</div>}
           {data.admissions.length === 0
             ? <div className="card empty"><b>কোনো আবেদন নেই</b>ল্যান্ডিং পেজের “অনলাইন ভর্তি” থেকে আবেদন এলে এখানে দেখা যাবে।</div>
-            : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>অভিভাবক</th><th>মোবাইল</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>
+            : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি ও শাখা</th><th>অভিভাবক</th><th>মোবাইল</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>
               {data.admissions.map(a => (
-                <tr key={a.id}><td><b>{a.name}</b></td><td>{a.cls}</td><td>{a.guardian || "—"}</td><td>{a.phone || "—"}</td>
+                <tr key={a.id}><td><b>{a.name}</b></td><td>{a.cls}{a.section ? " (" + a.section + ")" : ""}</td><td>{a.guardian || "—"}</td><td>{a.phone || "—"}</td>
                 <td>{a.status === "pending" ? <span className="pill pill-warn">অপেক্ষমাণ</span> : a.status === "approved" ? <span className="pill pill-ok">অনুমোদিত</span> : <span className="pill pill-bad">বাতিল</span>}</td>
                 <td>{a.status === "pending" && <div className="row-actions">
                   <button className="mini-btn" onClick={() => {
                     const nid = uid(); const items = makeStudentCosts(nid, costTypes, 0); const tot = costTotalsOf(items);
+                    const matchedCls = data.classes.find(c => c.name === a.cls);
+                    const validSecs = matchedCls ? normalizeClassSections(matchedCls).map(s => s.name) : defaultSectionNamesForClass(a.cls);
+                    const assignedSec = a.section && validSecs.includes(a.section) ? a.section : (validSecs[0] || "ক");
                     patch({ admissions: data.admissions.map(x => x.id === a.id ? { ...x, status: "approved" } : x),
-                            students: [...data.students, { id: nid, name: a.name, cls: a.cls, roll: data.students.filter(s2 => s2.cls === a.cls).length + 1, section: "ক", guardian: a.guardian || "", phone: a.phone || "", payable: tot.total, paid: 0 }],
+                            students: [...data.students, { id: nid, name: a.name, cls: a.cls, roll: data.students.filter(s2 => s2.cls === a.cls).length + 1, section: assignedSec, guardian: a.guardian || "", phone: a.phone || "", payable: tot.total, paid: 0 }],
                             studentCosts: [...(data.studentCosts || []), ...items] });
                     toast(a.name + " ভর্তি অনুমোদিত — শিক্ষার্থী তালিকা ও বার্ষিক খরচের হিসাবে যোগ হয়েছে");
                   }}>অনুমোদন</button>
@@ -1164,9 +2520,9 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
             <h3 style={{ marginTop: 0 }}>শিক্ষার্থী অনুযায়ী হিসাব (অফিস হিসাব তালিকা)</h3>
             {data.students.length === 0
               ? <div className="empty"><b>কোনো শিক্ষার্থী নেই</b>শিক্ষার্থী যোগ বা ভর্তি অনুমোদন হলেই এখানে তার বার্ষিক খরচের হিসাব আসবে।</div>
-              : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>রোল</th><th>মোট বার্ষিক খরচ</th><th>জমা</th><th>বকেয়া</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>
+              : <div className="table-wrap"><table><thead><tr><th>নাম</th><th>শ্রেণি</th><th>শাখা</th><th>রোল</th><th>মোট বার্ষিক খরচ</th><th>জমা</th><th>বকেয়া</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>
                 {data.students.map(x => { const t = costTotalsOf(costsOf(x.id)); return (
-                  <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{x.roll}</td><td>{taka(t.total)}</td><td>{taka(t.paid)}</td>
+                  <tr key={x.id}><td><b>{x.name}</b></td><td>{x.cls}</td><td>{x.section}</td><td>{toBnNum(x.roll)}</td><td>{taka(t.total)}</td><td>{taka(t.paid)}</td>
                   <td>{t.due > 0 ? taka(t.due) : "—"}</td>
                   <td>{t.due <= 0 ? <span className="pill pill-ok">পরিশোধিত</span> : t.paid > 0 ? <span className="pill pill-info">আংশিক জমা</span> : <span className="pill pill-warn">বকেয়া</span>}</td>
                   <td><button className="mini-btn" onClick={() => setCostStudentId(costStudentId === x.id ? "" : x.id)}>{costStudentId === x.id ? "বন্ধ করুন" : "বিস্তারিত খরচ"}</button></td></tr>); })}
@@ -1200,7 +2556,7 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
               <h3 style={{ marginTop: 0 }}>শ্রেণি অনুযায়ী মোট হিসাব</h3>
               {data.students.length === 0 ? <p style={{ color: "var(--muted)" }}>শিক্ষার্থী নেই।</p>
               : <div className="table-wrap"><table><thead><tr><th>শ্রেণি</th><th>শিক্ষার্থী</th><th>মোট খরচ</th><th>আদায়</th><th>বকেয়া</th></tr></thead><tbody>
-                {CLASS_NAMES.map(cl => { const sts = data.students.filter(x => x.cls === cl); if (!sts.length) return null; const tt = sts.reduce((acc, x) => { const q = costTotalsOf(costsOf(x.id)); acc.total += q.total; acc.paid += q.paid; acc.due += q.due; return acc; }, { total: 0, paid: 0, due: 0 }); return (
+                {classOptionsOf(data).map(cl => { const sts = data.students.filter(x => x.cls === cl); if (!sts.length) return null; const tt = sts.reduce((acc, x) => { const q = costTotalsOf(costsOf(x.id)); acc.total += q.total; acc.paid += q.paid; acc.due += q.due; return acc; }, { total: 0, paid: 0, due: 0 }); return (
                   <tr key={cl}><td><b>{cl}</b></td><td>{sts.length} জন</td><td>{taka(tt.total)}</td><td>{taka(tt.paid)}</td><td>{taka(tt.due)}</td></tr>); })}
                 </tbody></table></div>}
             </div>
@@ -1236,15 +2592,131 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 
       </main>
 
-      {showStudentForm && <StudentForm initial={editStudent} close={() => { setShowStudentForm(false); setEditStudent(null); }} save={saveStudent} costTypes={costTypes} showCost={showCostAtAdmission} existingCosts={editStudent ? costsOf(editStudent.id) : null} />}
+      {showStudentForm && <StudentForm initial={editStudent} classes={data.classes} close={() => { setShowStudentForm(false); setEditStudent(null); }} save={saveStudent} costTypes={costTypes} showCost={showCostAtAdmission} existingCosts={editStudent ? costsOf(editStudent.id) : null} />}
       {teacherForm && <TeacherForm close={() => setTeacherForm(false)} onPhoto={onPhoto} photoErr={photoErr}
         save={f => { patch({ teachers: [...data.teachers, { ...f, id: uid() }] }); setTeacherForm(false); toast("শিক্ষক যোগ হয়েছে"); }} />}
-      {classForm && <SimpleForm title="নতুন শ্রেণি" close={() => setClassForm(false)}
-        fields={[{ k: "name", l: "শ্রেণির নাম (যেমন: ষষ্ঠ)" }, { k: "sections", l: "শাখা (যেমন: ক, খ)" }, { k: "room", l: "কক্ষ নম্বর" }, { k: "capacity", l: "আসন সংখ্যা", type: "number" }]}
-        save={f => { patch({ classes: [...data.classes, { ...f, id: uid() }] }); setClassForm(false); toast("শ্রেণি যোগ হয়েছে"); }} />}
-      {subjectForm && <SimpleForm title="নতুন বিষয়" close={() => setSubjectForm(false)}
-        fields={[{ k: "name", l: "বিষয়ের নাম" }, { k: "code", l: "বিষয় কোড" }, { k: "classes", l: "যে শ্রেণির জন্য" }]}
-        save={f => { patch({ subjects: [...data.subjects, { ...f, id: uid() }] }); setSubjectForm(false); toast("বিষয় যোগ হয়েছে"); }} />}
+      {classForm && <ClassForm initial={editClass} close={() => { setClassForm(false); setEditClass(null); }}
+        save={rec => {
+          if (editClass) {
+            patch({ classes: data.classes.map(c => c.id === editClass.id ? { ...rec, id: editClass.id } : c) });
+            toast("শ্রেণির তথ্য আপডেট হয়েছে");
+          } else {
+            patch({ classes: [...data.classes, { ...rec, id: uid() }] });
+            toast("নতুন শ্রেণি যোগ হয়েছে");
+          }
+          setClassForm(false); setEditClass(null);
+        }} />}
+      {sectionModal && (() => {
+        const targetCls = data.classes.find(c => c.id === sectionModal.clsId);
+        if (!targetCls) return null;
+        return (
+          <SectionForm
+            clsName={targetCls.name}
+            initial={sectionModal.initial}
+            close={() => setSectionModal(null)}
+            save={sec => {
+              const curSecs = normalizeClassSections(targetCls);
+              const oldSec = sectionModal.idx >= 0 ? curSecs[sectionModal.idx] : null;
+              const nextSecs = sectionModal.idx >= 0
+                ? curSecs.map((s, i) => i === sectionModal.idx ? sec : s)
+                : [...curSecs, sec];
+              const nextCls = buildClassRecord(targetCls.id, targetCls.name, nextSecs, normalizeBoardBooks(targetCls), normalizeExtraActivities(targetCls));
+              const nextSubjects = (oldSec && oldSec.name !== sec.name)
+                ? data.subjects.map(sb => (sb.classes === targetCls.name && sb.section === oldSec.name) ? { ...sb, section: sec.name } : sb)
+                : data.subjects;
+              patch({ classes: data.classes.map(c => c.id === targetCls.id ? nextCls : c), subjects: nextSubjects });
+              toast(sectionModal.idx >= 0 ? "শাখার তথ্য আপডেট হয়েছে" : "নতুন শাখা যোগ হয়েছে");
+              setSectionModal(null);
+            }}
+          />
+        );
+      })()}
+      {subjectForm && (
+        <SubjectForm
+          initial={editSubject}
+          classes={data.classes}
+          classList={classOptionsOf(data)}
+          defaultClass={classBookFilter !== "সব" ? classBookFilter : "সব শ্রেণি"}
+          defaultSection={classBookSectionFilter !== "সব" ? classBookSectionFilter : "সব শাখা"}
+          defaultGroup={classBookTypeFilter === "এক্সট্রা অ্যাকটিভিটিস" ? "এক্সট্রা অ্যাকটিভিটিস" : "সাধারণ"}
+          close={() => { setSubjectForm(false); setEditSubject(null); }}
+          save={f => {
+            if (editSubject) {
+              const updatedSb = { ...editSubject, ...f, section: f.section || "সব শাখা" };
+              const nextSubjects = data.subjects.map(sb => sb.id === editSubject.id ? updatedSb : sb);
+              const nextClasses = data.classes.map(c => {
+                let books = normalizeBoardBooks(c);
+                let acts = normalizeExtraActivities(c);
+                const matchedOldClass = editSubject.classes === "সব শ্রেণি" || editSubject.classes === c.name;
+                const matchedNewClass = updatedSb.classes === "সব শ্রেণি" || updatedSb.classes === c.name;
+                if (matchedOldClass) {
+                  books = books.filter(b => !(b.title === editSubject.name && (b.group || "সাধারণ") === (editSubject.group || "সাধারণ")));
+                  if (editSubject.group === "এক্সট্রা অ্যাকটিভিটিস") acts = acts.filter(a => a !== editSubject.name);
+                }
+                if (matchedNewClass && updatedSb.section === "সব শাখা") {
+                  if (updatedSb.group === "এক্সট্রা অ্যাকটিভিটিস") {
+                    if (!acts.includes(updatedSb.name)) acts = [...acts, updatedSb.name];
+                  } else if (editSubject.group !== "এক্সট্রা অ্যাকটিভিটিস" && matchedOldClass && (!editSubject.section || editSubject.section === "সব শাখা")) {
+                    books = [...books, { title: updatedSb.name, group: updatedSb.group || "সাধারণ" }];
+                  }
+                }
+                const nextSecs = normalizeClassSections(c).map(sec => {
+                  if (!Array.isArray(sec.subjects)) return sec;
+                  const oldApplied = subjectAppliesToSection(editSubject, c.name, sec.name);
+                  const newApplied = subjectAppliesToSection(updatedSb, c.name, sec.name);
+                  let nextList = sec.subjects.filter(item => {
+                    if (!oldApplied) return true;
+                    return !(item.id === editSubject.id || (item.name === editSubject.name && item.group === (editSubject.group || item.group)));
+                  });
+                  if (newApplied) {
+                    const already = nextList.some(item => item.id === updatedSb.id || (item.name === updatedSb.name && item.group === updatedSb.group));
+                    if (!already) {
+                      nextList = [...nextList, {
+                        id: updatedSb.id,
+                        name: updatedSb.name,
+                        code: updatedSb.code || "",
+                        group: updatedSb.group || "সাধারণ",
+                        sectionOnly: updatedSb.section !== "সব শাখা"
+                      }];
+                    }
+                  }
+                  return { ...sec, subjects: nextList };
+                });
+                return buildClassRecord(c.id, c.name, nextSecs, books, acts);
+              });
+              patch({ subjects: nextSubjects, classes: nextClasses });
+              toast("বিষয়ের তথ্য আপডেট হয়েছে");
+            } else {
+              const newSb = { ...f, section: f.section || "সব শাখা", id: uid() };
+              const nextSubjects = [...data.subjects, newSb];
+              const nextClasses = data.classes.map(c => {
+                if (newSb.classes !== "সব শ্রেণি" && newSb.classes !== c.name) return c;
+                const nextSecs = normalizeClassSections(c).map(sec => {
+                  if (!Array.isArray(sec.subjects)) return sec;
+                  if (!subjectAppliesToSection(newSb, c.name, sec.name)) return sec;
+                  const already = sec.subjects.some(item => item.name === newSb.name && item.group === newSb.group);
+                  if (already) return sec;
+                  return {
+                    ...sec,
+                    subjects: [...sec.subjects, {
+                      id: newSb.id,
+                      name: newSb.name,
+                      code: newSb.code || "",
+                      group: newSb.group || "সাধারণ",
+                      sectionOnly: newSb.section !== "সব শাখা"
+                    }]
+                  };
+                });
+                return buildClassRecord(c.id, c.name, nextSecs, normalizeBoardBooks(c), normalizeExtraActivities(c));
+              });
+              patch({ subjects: nextSubjects, classes: nextClasses });
+              toast(newSb.section && newSb.section !== "সব শাখা" ? newSb.section + " শাখায় যুক্ত হয়েছে" : "তালিকায় যোগ হয়েছে");
+            }
+            setSubjectForm(false);
+            setEditSubject(null);
+          }}
+        />
+      )}
       {noticeForm && <SimpleForm title="নতুন নোটিশ" close={() => setNoticeForm(false)}
         fields={[{ k: "title", l: "শিরোনাম" }, { k: "date", l: "তারিখ", type: "date", def: todayStr() }, { k: "body", l: "বিবরণ", area: true }]}
         save={f => { patch({ notices: [{ ...f, id: uid() }, ...data.notices] }); setNoticeForm(false); toast("নোটিশ প্রকাশ হয়েছে"); }} />}
@@ -1365,17 +2837,29 @@ function Console({ data, setData, user, logout, goLanding, toast }) {
 }
 
 /* ---------- ফর্মসমূহ ---------- */
-function StudentForm({ initial, close, save, costTypes, showCost, existingCosts }) {
-  const [f, setF] = useState(initial || { name: "", cls: "ষষ্ঠ", roll: "", section: "ক", guardian: "", phone: "", payable: 12000, paid: 0 });
+function StudentForm({ initial, classes, close, save, costTypes, showCost, existingCosts }) {
+  const clsOpts = classOptionsOf({ classes });
+  const sectionsFor = clsName => {
+    const matched = (classes || []).find(c => c.name === clsName);
+    return matched ? normalizeClassSections(matched).map(s => s.name) : defaultSectionNamesForClass(clsName);
+  };
+  const initCls = (initial && initial.cls) || clsOpts[0] || "প্লে";
+  const [f, setF] = useState(initial || { name: "", cls: initCls, roll: "", section: sectionsFor(initCls)[0] || "ক", guardian: "", phone: "", payable: 12000, paid: 0 });
   const set = k => e => setF({ ...f, [k]: e.target.value });
+  const secOpts = sectionsFor(f.cls);
+  const onClassChange = e => {
+    const nextCls = e.target.value;
+    const nextSecs = sectionsFor(nextCls);
+    setF(prev => ({ ...prev, cls: nextCls, section: nextSecs.includes(prev.section) ? prev.section : (nextSecs[0] || "ক") }));
+  };
   const previewList = existingCosts && existingCosts.length ? existingCosts : (costTypes || []).map(t => ({ name: t.name, amount: +t.amount || 0, paid: 0 }));
   const previewTotal = previewList.reduce((a, c) => a + (+c.amount || 0), 0);
   return (
     <ModalForm title={initial ? "শিক্ষার্থী সম্পাদনা" : "নতুন শিক্ষার্থী"} close={close} onSubmit={() => { if (f.name.trim()) save({ ...f, roll: +f.roll || 0, payable: showCost ? previewTotal : (+f.payable || 0), paid: +f.paid || 0 }); }}>
       <Field label="নাম *" full><input value={f.name} onChange={set("name")} required /></Field>
-      <Field label="শ্রেণি"><select value={f.cls} onChange={set("cls")}>{CLASS_NAMES.map(c => <option key={c}>{c}</option>)}</select></Field>
+      <Field label="শ্রেণি"><select value={f.cls} onChange={onClassChange}>{clsOpts.map(c => <option key={c}>{c}</option>)}</select></Field>
       <Field label="রোল"><input type="number" value={f.roll} onChange={set("roll")} /></Field>
-      <Field label="শাখা"><input value={f.section} onChange={set("section")} /></Field>
+      <Field label={isGroupClass(f.cls) ? "বিভাগ / শাখা" : "শাখা"}><select value={f.section} onChange={set("section")}>{Array.from(new Set([...secOpts, f.section].filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}</select></Field>
       <Field label="অভিভাবকের নাম"><input value={f.guardian} onChange={set("guardian")} /></Field>
       <Field label="মোবাইল"><input value={f.phone} onChange={set("phone")} /></Field>
       {!showCost && <Field label="মোট ফি (৳)"><input type="number" value={f.payable} onChange={set("payable")} /></Field>}
@@ -1386,6 +2870,224 @@ function StudentForm({ initial, close, save, costTypes, showCost, existingCosts 
           <div style={{ fontSize: "12.5px", marginTop: 4 }}>এই মোট অঙ্কই শিক্ষার্থীর মোট ফি হিসাবে বসবে এবং অফিসের হিসাব তালিকায় (শিক্ষার্থীর বার্ষিক খরচ) দেখা যাবে।</div>
         </div>
       </Field>}
+    </ModalForm>
+  );
+}
+function ClassForm({ initial, close, save }) {
+  const initSecs = initial
+    ? normalizeClassSections(initial)
+    : SECTION_NAMES.map((nm, i) => ({ name: nm, room: toBnNum(101 + i), capacity: 40 }));
+  const formatBooksText = books => (books || []).map(b => (b.group && b.group !== "সাধারণ" ? b.group + ": " : "") + b.title).join("\n");
+  const parseBooksText = (txt, clsName) => String(txt || "").split("\n").map(line => line.trim()).filter(Boolean).map(line => {
+    const idx = line.indexOf(":");
+    if (idx > 0 && idx < 24) {
+      return { group: line.slice(0, idx).trim(), title: line.slice(idx + 1).trim() };
+    }
+    return { group: isGroupClass(clsName) ? "আবশ্যিক" : "সাধারণ", title: line };
+  }).filter(b => b.title);
+
+  const [name, setName] = useState(initial ? initial.name : "");
+  const [secs, setSecs] = useState(initSecs);
+  const [booksText, setBooksText] = useState(initial ? formatBooksText(normalizeBoardBooks(initial)) : "");
+  const [extraActs, setExtraActs] = useState(initial ? normalizeExtraActivities(initial) : [...DEFAULT_EXTRA_ACTIVITIES]);
+  const [newAct, setNewAct] = useState("");
+  const updateSec = (idx, key, val) => setSecs(prev => prev.map((s, i) => i === idx ? { ...s, [key]: val } : s));
+  const addSection = () => {
+    const nextIdx = secs.length;
+    const defaultNm = SECTION_NAMES[nextIdx] || toBnNum(nextIdx + 1);
+    setSecs(prev => [...prev, { name: defaultNm, room: "", capacity: 40 }]);
+  };
+  const removeSection = idx => setSecs(prev => prev.filter((_, i) => i !== idx));
+  const applyPresetSections = namesArr => setSecs(prev => namesArr.map((nm, i) => {
+    const item = {
+      name: nm,
+      room: (prev[i] && prev[i].room) || toBnNum(101 + i),
+      capacity: (prev[i] && prev[i].capacity != null) ? prev[i].capacity : 40
+    };
+    if (prev[i] && Array.isArray(prev[i].subjects)) item.subjects = prev[i].subjects;
+    return item;
+  }));
+  const toggleAct = act => setExtraActs(prev => prev.includes(act) ? prev.filter(x => x !== act) : [...prev, act]);
+  const addCustomAct = () => {
+    const t = newAct.trim();
+    if (!t) return;
+    if (!extraActs.includes(t)) setExtraActs(prev => [...prev, t]);
+    setNewAct("");
+  };
+  const onNameChange = nextName => {
+    setName(nextName);
+    const trimmed = nextName.trim();
+    if (!initial && isGroupClass(trimmed)) {
+      applyPresetSections(GROUP_SECTION_NAMES);
+    } else if (!initial && CLASS_NAMES.includes(trimmed) && !isGroupClass(trimmed)) {
+      applyPresetSections(SECTION_NAMES);
+    }
+    if (!initial && DEFAULT_BOARD_BOOKS[trimmed] && !booksText.trim()) {
+      setBooksText(formatBooksText(DEFAULT_BOARD_BOOKS[trimmed]));
+    }
+  };
+  const totalSeats = secs.reduce((a, s) => a + (+s.capacity || 0), 0);
+  const allActChoices = Array.from(new Set([...DEFAULT_EXTRA_ACTIVITIES, ...extraActs]));
+  return (
+    <ModalForm title={initial ? "শ্রেণি, শাখা, বোর্ড বই ও এক্সট্রা অ্যাকটিভিটিস সম্পাদনা" : "নতুন শ্রেণি যোগ"} close={close}
+      onSubmit={() => { if (name.trim()) save(buildClassRecord(initial ? initial.id : uid(), name, secs, parseBooksText(booksText, name), extraActs)); }}>
+      <Field label="শ্রেণির নাম * (যেমন: প্লে, নার্সারি, প্রথম … দ্বাদশ)" full>
+        <input list="bd-class-suggestions" value={name} onChange={e => onNameChange(e.target.value)} placeholder="শ্রেণির নাম লিখুন" required />
+        <datalist id="bd-class-suggestions">
+          {CLASS_NAMES.map(cn => <option key={cn} value={cn} />)}
+        </datalist>
+      </Field>
+      <div className="full" style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--ink2)" }}>
+            শ্রেণির শাখাসমূহ ({toBnNum(secs.length)}টি · মোট আসন: {totalSeats}টি)
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button type="button" className="mini-btn" onClick={addSection}>+ শাখা যোগ</button>
+            <button type="button" className="mini-btn" onClick={() => applyPresetSections(SECTION_NAMES)}>ক, খ, গ</button>
+            <button type="button" className="mini-btn" onClick={() => applyPresetSections(GROUP_SECTION_NAMES)}>সাইন্স, ইকমার্স, মানবিক</button>
+          </div>
+        </div>
+        {secs.length === 0 && <div style={{ fontSize: "13px", color: "var(--muted)", padding: 10, borderRadius: 8, background: "var(--surface2)", border: "1px dashed var(--line)" }}>কোনো শাখা নেই — "+ শাখা যোগ" বাটনে ক্লিক করুন।</div>}
+        {secs.map((sec, idx) => (
+          <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, alignItems: "end", padding: 10, borderRadius: 8, background: "var(--surface2)", border: "1px solid var(--line)" }}>
+            <div>
+              <label>শাখা {toBnNum(idx + 1)}-এর নাম</label>
+              <input value={sec.name} onChange={e => updateSec(idx, "name", e.target.value)} required />
+            </div>
+            <div>
+              <label>রুম নং</label>
+              <input value={sec.room} onChange={e => updateSec(idx, "room", e.target.value)} placeholder="যেমন: ১০১" required />
+            </div>
+            <div>
+              <label>আসন সংখ্যা</label>
+              <input type="number" min="0" value={sec.capacity} onChange={e => updateSec(idx, "capacity", e.target.value)} required />
+            </div>
+            <button type="button" className="mini-btn red" onClick={() => removeSection(idx)}>মুছুন</button>
+          </div>
+        ))}
+      </div>
+      <Field label="বোর্ড বইসমূহ (প্রতি লাইনে একটি বই; নবম–দ্বাদশ হলে 'সাইন্স: পদার্থবিজ্ঞান' বা 'আবশ্যিক: গণিত' লিখুন)" full>
+        <textarea rows={4} value={booksText} onChange={e => setBooksText(e.target.value)} placeholder="যেমন:&#10;আবশ্যিক: গণিত&#10;সাইন্স: পদার্থবিজ্ঞান&#10;ইকমার্স: হিসাববিজ্ঞান" />
+      </Field>
+      <div className="full" style={{ display: "grid", gap: 8, padding: 10, borderRadius: 8, background: "var(--surface2)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--ink2)" }}>
+            এক্সট্রা অ্যাকটিভিটিস ({toBnNum(extraActs.length)}টি নির্বাচিত)
+          </span>
+          <button type="button" className="mini-btn" onClick={() => setExtraActs([...DEFAULT_EXTRA_ACTIVITIES])}>ডিফল্ট ১১টি বসান</button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {allActChoices.map(act => {
+            const on = extraActs.includes(act);
+            return (
+              <button key={act} type="button" onClick={() => toggleAct(act)} style={{
+                padding: "5px 10px", borderRadius: 7, fontSize: "13px", fontWeight: 600,
+                border: "1px solid " + (on ? "var(--brand)" : "var(--line)"),
+                background: on ? "var(--brand-soft)" : "var(--surface)",
+                color: on ? "var(--brand-dark)" : "var(--muted)"
+              }}>{on ? "✓ " : "+ "}{act}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input value={newAct} onChange={e => setNewAct(e.target.value)} placeholder="নতুন এক্সট্রা অ্যাকটিভিটিস যোগ করুন…" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomAct(); } }} />
+          <button type="button" className="btn btn-ghost btn-sm" onClick={addCustomAct}>যোগ</button>
+        </div>
+      </div>
+    </ModalForm>
+  );
+}
+function SectionForm({ clsName, initial, close, save }) {
+  const [f, setF] = useState({
+    name: initial ? initial.name : "",
+    room: initial && initial.room && initial.room !== "—" ? initial.room : "",
+    capacity: initial ? String(initial.capacity ?? 40) : "40"
+  });
+  const set = k => e => setF(prev => ({ ...prev, [k]: e.target.value }));
+  return (
+    <ModalForm title={(initial ? "শাখা সম্পাদনা — " : "নতুন শাখা যোগ — ") + clsName + " শ্রেণি"} close={close}
+      onSubmit={() => {
+        if (f.name.trim()) {
+          save({ ...(initial || {}), name: f.name.trim(), room: f.room.trim() || "—", capacity: +f.capacity || 0 });
+        }
+      }}>
+      <Field label="শাখার নাম * (যেমন: ক, ঘ, সাইন্স, প্রভাতি)" full>
+        <input value={f.name} onChange={set("name")} placeholder="শাখার নাম লিখুন" required />
+      </Field>
+      <Field label="রুম নং">
+        <input value={f.room} onChange={set("room")} placeholder="যেমন: ১০৪" />
+      </Field>
+      <Field label="আসন সংখ্যা">
+        <input type="number" min="0" value={f.capacity} onChange={set("capacity")} required />
+      </Field>
+    </ModalForm>
+  );
+}
+function SubjectForm({ initial, classes, classList, defaultClass, defaultSection, defaultGroup, close, save }) {
+  const [f, setF] = useState({
+    name: initial ? initial.name : "",
+    code: initial ? (initial.code || "") : "",
+    classes: initial ? (initial.classes || "সব শ্রেণি") : (defaultClass || "সব শ্রেণি"),
+    section: initial ? (initial.section || "সব শাখা") : (defaultSection || "সব শাখা"),
+    group: initial ? (initial.group || "সাধারণ") : (defaultGroup || "সাধারণ")
+  });
+  const set = k => e => setF(prev => ({ ...prev, [k]: e.target.value }));
+  const clsOpts = Array.from(new Set(["সব শ্রেণি", ...(classList || []), f.classes].filter(Boolean)));
+  const matchedCls = (classes || []).find(c => c.name === f.classes);
+  const classSecNames = matchedCls
+    ? normalizeClassSections(matchedCls).map(s => s.name)
+    : (f.classes && f.classes !== "সব শ্রেণি"
+        ? defaultSectionNamesForClass(f.classes)
+        : Array.from(new Set((classes || []).flatMap(c => normalizeClassSections(c).map(s => s.name)))));
+  const secOpts = Array.from(new Set(["সব শাখা", ...classSecNames, f.section].filter(Boolean)));
+  const groupOpts = Array.from(new Set(["সাধারণ", "আবশ্যিক", "সাইন্স", "ইকমার্স", "মানবিক", "ঐচ্ছিক", "এক্সট্রা অ্যাকটিভিটিস", f.group].filter(Boolean)));
+  return (
+    <ModalForm title={initial ? "বিষয় / বোর্ড বই / অ্যাকটিভিটিস সম্পাদনা" : "নতুন বিষয় / বোর্ড বই / অ্যাকটিভিটিস"} close={close}
+      onSubmit={() => {
+        if (f.name.trim()) {
+          save({
+            name: f.name.trim(),
+            code: f.code.trim(),
+            classes: f.classes || "সব শ্রেণি",
+            section: f.section || "সব শাখা",
+            group: f.group || "সাধারণ"
+          });
+        }
+      }}>
+      <Field label="বিষয় / বই / অ্যাকটিভিটিসের নাম *" full>
+        <input value={f.name} onChange={set("name")} placeholder="নাম লিখুন" required />
+      </Field>
+      <Field label="বিষয় কোড">
+        <input value={f.code} onChange={set("code")} placeholder="যেমন: ১০১" />
+      </Field>
+      <Field label="যে শ্রেণির জন্য">
+        <select
+          value={f.classes}
+          onChange={e => {
+            const nextCls = e.target.value;
+            const nextMatched = (classes || []).find(c => c.name === nextCls);
+            const nextSecs = nextMatched ? normalizeClassSections(nextMatched).map(s => s.name) : defaultSectionNamesForClass(nextCls);
+            setF(prev => ({
+              ...prev,
+              classes: nextCls,
+              section: prev.section === "সব শাখা" || nextSecs.includes(prev.section) ? prev.section : "সব শাখা"
+            }));
+          }}
+        >
+          {clsOpts.map(cn => <option key={cn} value={cn}>{cn}</option>)}
+        </select>
+      </Field>
+      <Field label="যে শাখার জন্য">
+        <select value={f.section} onChange={set("section")}>
+          {secOpts.map(sn => <option key={sn} value={sn}>{sn === "সব শাখা" ? "সব শাখা (শ্রেণির সকল শাখা)" : "শাখা: " + sn}</option>)}
+        </select>
+      </Field>
+      <Field label="ধরন / বিভাগ">
+        <select value={f.group} onChange={set("group")}>
+          {groupOpts.map(g => <option key={g} value={g}>{g}</option>)}
+        </select>
+      </Field>
     </ModalForm>
   );
 }
@@ -1440,6 +3142,8 @@ function LoanForm({ data, close, save }) {
 function SettingsForm({ data, setData, toast, downloadBackup, importBackup }) {
   const s = data.settings;
   const [f, setF] = useState(s);
+  const [syncMsg, setSyncMsg] = useState("");
+  const doSync = () => { setSyncMsg("সিঙ্ক হয়নি — এখন অফলাইন / লোকাল মোডে আছে। ডেটা এই ব্রাউজারেই আছে; পরে আবার চেষ্টা করুন।"); };
   const set = k => e => setF({ ...f, [k]: e.target.value });
   return (
     <div>
@@ -1479,7 +3183,7 @@ function SettingsForm({ data, setData, toast, downloadBackup, importBackup }) {
         </div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
           <button className="btn btn-accent btn-sm" onClick={() => { const d = sampleData(); setData(d); setF(d.settings); toast("নমুনা তথ্য বসানো হয়েছে"); }}>এক ক্লিকে নমুনা তথ্য বসান</button>
-          <button className="btn btn-danger btn-sm" onClick={() => { const d = emptyData(); setData(d); setF(d.settings); toast("সব তথ্য মোছা হয়েছে"); }}>সব তথ্য মুছে ফেলুন</button>
+          <button className="btn btn-danger btn-sm" onClick={() => { const d = { ...emptyData(), students: [], studentCosts: [] }; setData(d); setF(d.settings); toast("সব তথ্য মোছা হয়েছে"); }}>সব তথ্য মুছে ফেলুন</button>
         </div>
       </div>
     </div>
@@ -1492,7 +3196,9 @@ function SettingsForm({ data, setData, toast, downloadBackup, importBackup }) {
 function App() {
   const [data, setData] = useState(emptyData());
   const [view, setView] = useState("landing"); // landing | console
+  const [consoleInitSec, setConsoleInitSec] = useState(null);
   const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const [admissionOpen, setAdmissionOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
@@ -1503,8 +3209,42 @@ function App() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 3400);
   };
 
+  const onLogin = payload => {
+    if (!payload || !payload.user || !payload.token) return;
+    setAuthToken(payload.token);
+    setUser(payload.user);
+    setLoginOpen(false);
+    setView("console");
+    toast(payload.user.isMasterAdmin || payload.user.isSuper
+      ? "স্বাগতম, মাস্টার অ্যাডমিন! ওয়েবসাইটের সকল মডিউলের অ্যাক্সেস সক্রিয় হয়েছে।"
+      : "স্বাগতম! লগইন সফল (সীমিত অ্যাক্সেস)");
+  };
 
-  const onLogin = u => { setUser(u); setLoginOpen(false); setView("console"); toast(u.isSuper ? "স্বাগতম, সুপার অ্যাডমিন!" : "স্বাগতম! লগইন সফল (ডেমো)"); };
+  const goConsole = targetSecKey => {
+    if (user && authToken) {
+      if (typeof targetSecKey === "string" && targetSecKey) {
+        setConsoleInitSec(targetSecKey);
+      }
+      setView("console");
+    } else {
+      setLoginOpen(true);
+      toast("কনসোলে প্রবেশ করতে লগইন করুন");
+    }
+  };
+
+  const logout = () => {
+    if (authToken) {
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + authToken },
+      }).catch(() => {});
+    }
+    setAuthToken("");
+    setUser(null);
+    setView("landing");
+    toast("লগআউট হয়েছে");
+  };
+
   const submitAdmission = f => {
     setData(prev => ({ ...prev, admissions: [...prev.admissions, { ...f, id: uid(), status: "pending", date: todayStr() }] }));
     setAdmissionOpen(false);
@@ -1512,13 +3252,15 @@ function App() {
   };
   return (
     <div>
-      {view === "landing"
-        ? <Landing data={data} goConsole={() => setView("console")} openLogin={() => setLoginOpen(true)} openAdmission={() => setAdmissionOpen(true)} toast={toast} />
-        : <Console data={data} setData={setData} user={user} toast={toast}
+      {view === "console" && user && authToken
+        ? <Console data={data} setData={setData} user={user} toast={toast}
+            initialSecKey={consoleInitSec}
+            clearInitialSecKey={() => setConsoleInitSec(null)}
             goLanding={() => setView("landing")}
-            logout={() => { setUser(null); setView("landing"); toast("লগআউট হয়েছে"); }} />}
+            logout={logout} />
+        : <Landing data={data} user={user} goConsole={goConsole} openLogin={() => setLoginOpen(true)} logout={logout} openAdmission={() => setAdmissionOpen(true)} toast={toast} />}
       {loginOpen && <LoginModal close={() => setLoginOpen(false)} onLogin={onLogin} />}
-      {admissionOpen && <AdmissionModal close={() => setAdmissionOpen(false)} submit={submitAdmission} showCost={data.settings.showYearlyCostAtAdmission !== false} costTypes={costTypesOf(data)} />}
+      {admissionOpen && <AdmissionModal close={() => setAdmissionOpen(false)} submit={submitAdmission} showCost={data.settings.showYearlyCostAtAdmission !== false} costTypes={costTypesOf(data)} classList={classOptionsOf(data)} classes={data.classes} />}
       {toastMsg && <div className={"toast" + (toastMsg.isErr ? " err" : "")}>{toastMsg.msg}</div>}
     </div>
   );

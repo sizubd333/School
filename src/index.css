@@ -147,6 +147,7 @@ img{max-width:100%;display:block}
 .modal h2{margin:0 0 4px;font-size:21px}
 .modal .sub{color:var(--muted);font-size:14px;margin:0 0 14px}
 .role-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.role-tabs.three{grid-template-columns:repeat(3,1fr)}
 .role-tabs button{min-height:48px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);font-weight:600;font-size:15px;color:var(--ink2)}
 .role-tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .note-box{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13.5px;color:var(--ink2);margin:12px 0}
